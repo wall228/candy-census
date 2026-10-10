@@ -1,0 +1,24 @@
+{
+  "candies": [
+    { "id": "butterfinger",        "name": "Butterfinger",         "category": "chocolate", "image": "images/butterfinger.webp",        "tags": ["Peanut butter", "Crispy"] },
+    { "id": "3-musketeers",        "name": "3 Musketeers",         "category": "chocolate", "image": "images/3-musketeers.webp",        "tags": ["Nougat"] },
+    { "id": "milky-way",           "name": "Milky Way",            "category": "chocolate", "image": "images/milky-way.webp",           "tags": ["Nougat", "Caramel"] },
+    { "id": "kit-kat",             "name": "Kit Kat",              "category": "chocolate", "image": "images/kit-kat.webp",             "tags": ["Wafer", "Crispy"] },
+    { "id": "snickers",            "name": "Snickers",             "category": "chocolate", "image": "images/snickers.webp",            "tags": ["Nuts", "Caramel", "Nougat"] },
+    { "id": "almond-joy",          "name": "Almond Joy",           "category": "chocolate", "image": "images/almond-joy.webp",          "tags": ["Nuts", "Coconut"] },
+    { "id": "reeses-cups",         "name": "Reese's Cups",         "category": "chocolate", "image": "images/reeses-cups.webp",         "tags": ["Peanut butter"] },
+    { "id": "twix",                "name": "Twix",                 "category": "chocolate", "image": "images/twix.webp",                "tags": ["Caramel", "Cookie"] },
+    { "id": "peanut-mms",          "name": "Peanut M&M's",         "category": "chocolate", "image": "images/peanut-mms.webp",          "tags": ["Nuts", "Candy shell"] },
+    { "id": "mms",                 "name": "M&M's",                "category": "chocolate", "image": "images/mms.webp",                 "tags": ["Candy shell"] },
+
+    { "id": "sour-patch-kids",     "name": "Sour Patch Kids",      "category": "other",     "image": "images/sour-patch-kids.webp",     "tags": ["Sour", "Chewy", "Fruity"] },
+    { "id": "trolli-crawlers",     "name": "Trolli Sour Crawlers", "category": "other",     "image": "images/trolli-crawlers.webp",     "tags": ["Sour", "Gummy", "Fruity"] },
+    { "id": "airheads",            "name": "Airheads",             "category": "other",     "image": "images/airheads.webp",            "tags": ["Chewy", "Fruity"] },
+    { "id": "life-savers-gummies", "name": "Life Savers Gummies",  "category": "other",     "image": "images/life-savers-gummies.webp", "tags": ["Gummy", "Fruity"] },
+    { "id": "twizzlers",           "name": "Twizzlers",            "category": "other",     "image": "images/twizzlers.webp",           "tags": ["Chewy", "Fruity"] },
+    { "id": "starburst",           "name": "Starburst",            "category": "other",     "image": "images/starburst.webp",           "tags": ["Chewy", "Fruity"] },
+    { "id": "skittles",            "name": "Skittles",             "category": "other",     "image": "images/skittles.webp",            "tags": ["Chewy", "Fruity", "Candy shell"] },
+    { "id": "haribo-goldbears",    "name": "Haribo Goldbears",     "category": "other",     "image": "images/haribo-goldbears.webp",    "tags": ["Gummy", "Fruity"] },
+    { "id": "skittles-gummies",    "name": "Skittles Gummies",     "category": "other",     "image": "images/skittles-gummies.webp",    "tags": ["Gummy", "Fruity"] }
+  ]
+}

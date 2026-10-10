@@ -149,10 +149,14 @@ p{margin:0}
 .ccard .cname{font:900 1.02rem/1.15 var(--f-body);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-width:0}
 .ccard.lifted{opacity:.25}
 .ccard.ghost{position:fixed;left:0;top:0;z-index:90;pointer-events:none;box-shadow:0 18px 30px rgba(0,0,0,.5);flex:none}
-.cart{flex:none;width:46px;height:46px;border-radius:10px;object-fit:contain;background:#efe0c9;display:block}
+.cart{flex:none;width:76px;height:48px;border-radius:6px;object-fit:contain;background:transparent;display:block}
 span.cart{display:grid;place-items:center;font:400 1.15rem var(--f-display);color:#fff7ec;background:var(--wc,#8a4b2a);background-image:repeating-linear-gradient(-45deg,rgba(255,255,255,.16) 0 6px,transparent 6px 12px)}
 .cat-other .cart{outline:2px solid var(--mint)}
 .cat-choc .cart{outline:2px solid var(--caramel)}
+.cat-other img.cart,.cat-choc img.cart{outline:none}
+.duel-card img.cart{width:min(340px,38vw);height:200px;border-radius:10px}
+.rv-hero img.cart{width:min(70vw,480px);height:min(40vw,280px);border-radius:12px;box-shadow:none}
+.crow.ro img.cart{width:128px;height:76px}
 
 /* ---------- Showdown ---------- */
 .duel{flex:1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center}
@@ -211,6 +215,10 @@ span.cart{display:grid;place-items:center;font:400 1.15rem var(--f-display);colo
 .seg button:disabled{cursor:not-allowed;opacity:.6}
 .clist{display:flex;flex-direction:column;gap:10px}
 .crow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:start;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:12px}
+.crow.ro{grid-template-columns:auto minmax(0,1fr);align-items:center}
+.crow.ro span.cart{width:84px;height:84px}
+.crow.ro .cmain{gap:6px}
+.lockmsg ul{margin:6px 0 0;padding-left:1.2em}
 .cthumb{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font:800 .72rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
 .cthumb .cart{width:72px;height:72px;font-size:1.6rem}
 .cmain{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -483,7 +491,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const TAGS = ['Nuts','Peanut butter','Caramel','Nougat','Wafer','Crispy','Coconut','White chocolate','Chewy','Gummy','Sour','Fruity','Mint','Hard candy','Marshmallow'];
 const CATN = { choc: 'Chocolates', other: 'Everything else' };
 const WRAP = ['#a3402c','#3d67a8','#c48b1f','#4f8a3a','#7f3c96','#c0581b','#2b8681','#a8325f'];
-const S = { ok:false, ready:false, offline:false,
+const S = { ok:false, ready:false, offline:false, candySource:'none', candyLoadedAt:0, candyError:null, candyProblems:[], badImages:new Set(),
   candies:[], votes:[], settings:{ pin:'1031', open:true }, cur:'scr-main' };
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -544,7 +552,7 @@ $$('[data-gear]').forEach(el => el.insertAdjacentHTML('beforeend', gearSVG(+el.d
 /* ---------- candy art ---------- */
 function art(c, cls = '') {
   if (!c) return `<span class="cart ${cls}" style="--wc:#5a3a2a">?</span>`;
-  if (c.img && blobURL(c.img)) return `<img class="cart ${cls}" src="${blobURL(c.img)}" alt="" draggable="false">`;
+  if (c.img) return `<img class="cart ${cls}" src="${esc(c.img)}" alt="" draggable="false" data-ini="${esc(initials(c.name))}" data-wc="${WRAP[hash(c.id) % WRAP.length]}">`;
   return `<span class="cart ${cls}" style="--wc:${WRAP[hash(c.id) % WRAP.length]}">${esc(initials(c.name))}</span>`;
 }
 const cardHTML = c => `<div class="ccard cat-${catOf(c)}" data-id="${esc(c.id)}" tabindex="0">${art(c)}<span class="cname">${esc(c.name)}</span></div>`;
@@ -555,6 +563,11 @@ function polHTML(v, rot = true) {
 }
 document.addEventListener('error', e => {
   const t = e.target;
+  if (t.tagName === 'IMG' && t.dataset.ini !== undefined && !t.dataset.failed) {
+    t.dataset.failed = '1';
+    const sp = document.createElement('span'); sp.className = t.className; sp.style.setProperty('--wc', t.dataset.wc || '#8a4b2a'); sp.textContent = t.dataset.ini;
+    t.replaceWith(sp); return;
+  }
   if (t.tagName === 'IMG' && t.dataset.fallback !== undefined && !t.dataset.failed) {
     t.dataset.failed = '1'; t.replaceWith(Object.assign(document.createElement('span'), { className:'mono', textContent:t.dataset.fallback }));
   }
@@ -689,7 +702,7 @@ function renderMain() {
   cast.disabled = !canVote();
   note.textContent = S.offline ? "This browser can't save votes. Make sure Chrome isn't in Incognito mode."
     : !S.ready ? 'Warming up the machines…'
-    : !S.candies.length ? 'The tasting line opens soon.'
+    : !S.candies.length ? (S.candySource === 'none' ? "The candy list didn't load. Host: check the Candies tab." : 'The tasting line opens soon.')
     : !S.settings.open ? 'Voting is closed. The results are coming!'
     : 'Takes about a minute. Best enjoyed with a mouthful of candy.';
   const withPhoto = S.votes.slice().reverse();
@@ -1020,17 +1033,23 @@ function renderHost(force) {
 }
 const locked = () => S.votes.length > 0;
 function hostCandies() {
-  const c = catsNow(), L = locked();
+  const c = catsNow(), probs = [...(S.candyProblems || [])];
+  S.candies.forEach(x => {
+    if (!x.img) probs.push(`${x.name} has no picture listed, so it shows initials instead.`);
+    else if (S.badImages.has(x.id)) probs.push(`${x.name}: the picture ${x.img.split('?')[0]} didn't load. Check the filename and that it's in the images folder.`);
+  });
+  const known = new Set(S.candies.map(x => x.id)); let orphan = 0;
+  S.votes.forEach(v => [...(v.choc || []), ...(v.other || [])].forEach(id => { if (!known.has(id)) orphan++; }));
+  if (orphan) probs.push(`${orphan} ranked ${orphan === 1 ? 'pick refers' : 'picks refer'} to candies that aren't in candies.json anymore, so they don't count. This happens when a candy's id changes or it's removed after voting starts.`);
+  const src = S.candySource === 'live' ? `Loaded from candies.json at ${timeStr(S.candyLoadedAt)}.`
+    : S.candySource === 'cached' ? `Couldn't reach candies.json (${S.candyError}), so this is the copy saved on the tablet from ${new Date(S.candyLoadedAt).toLocaleString()}.`
+    : `No candy list: candies.json couldn't be loaded (${S.candyError || 'unknown error'}).`;
   return `<section class="hpanel">
     <div class="hp-head"><h3>Candy list</h3><span class="note">${c.choc.length} chocolates · ${c.other.length} everything else</span></div>
-    ${L ? `<p class="lockmsg">Voting has started, so adding, removing, or recategorizing candies is locked to keep the scores fair. You can still rename candies, change tags, and swap photos. Clear all votes in Settings to unlock.</p>` : ''}
-    ${S.ok ? '' : `<p class="lockmsg">This browser can't save data, so changes won't stick. Make sure Chrome isn't in Incognito mode.</p>`}
-    <form class="add-form" id="add-form">
-      <input class="tin" id="add-name" maxlength="40" placeholder="Candy name, e.g. Nerds" ${L ? 'disabled' : ''}>
-      <div class="seg" id="add-cat"><button type="button" data-cat="choc" class="${addCat === 'choc' ? 'on' : ''}" ${L ? 'disabled' : ''}>Chocolate</button><button type="button" data-cat="other" class="${addCat === 'other' ? 'on' : ''}" ${L ? 'disabled' : ''}>Everything else</button></div>
-      <button class="btn primary small" ${L ? 'disabled' : ''}>Add candy</button>
-    </form>
-    <div class="clist">${S.candies.length ? S.candies.map(x => candyRow(x, L)).join('') : `<p class="note">No candies yet. Add your first one above. Each one gets a photo slot and optional flavor tags, which power the clues on the main screen.</p>`}</div>
+    <div class="card-plain"><p class="note">${esc(src)} To change the lineup, edit candies.json or the images folder in your GitHub repo, give it a minute or two to publish, then reload here.</p>
+      <div class="row"><button type="button" class="btn small" id="reload-candies">Reload candy list</button></div></div>
+    ${probs.length ? `<div class="lockmsg"><strong>Check these:</strong><ul>${probs.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : (S.candies.length ? '<p class="note">Everything checks out.</p>' : '')}
+    <div class="clist">${S.candies.map(x => `<div class="crow ro">${art(x)}<div class="cmain"><strong>${esc(x.name)}</strong><span class="note">${x.cat === 'choc' ? 'Chocolate' : 'Everything else'} · id ${esc(x.id)}</span><div class="tags">${x.tags.map(t => `<span class="chip on">${esc(t)}</span>`).join('')}</div></div></div>`).join('')}</div>
   </section>`;
 }
 let addCat = 'choc';
@@ -1099,6 +1118,7 @@ hostBody.addEventListener('click', e => {
   }
   const vrow = b.closest('.vrow');
   if (vrow && b.dataset.act === 'vdel') { arm(b, 'Tap again to delete', () => deleteVote(vrow.dataset.id)); return; }
+  if (b.id === 'reload-candies') loadCandies(true);
   if (b.id === 'dl-photos') downloadPhotos(b);
   if (b.id === 'backup') backup(b);
   if (b.id === 'restore-go') doRestore();
@@ -1182,7 +1202,7 @@ async function backup(btn) {
   try {
     const blobs = {};
     for (const [id, b] of BLOBS) blobs[id] = { type:b.type, data:await blobToDataURL(b) };
-    const data = { app:'candy-census', version:1, savedAt:Date.now(), candies:S.candies, settings:S.settings, votes:S.votes, blobs };
+    const data = { app:'candy-census', version:2, savedAt:Date.now(), candyList:S.candies.map(c => ({ id:c.id, name:c.name })), settings:S.settings, votes:S.votes, blobs };
     const d = new Date(), p2 = n => String(n).padStart(2, '0');
     saveFile(new Blob([JSON.stringify(data)], { type:'application/json' }), `candy-census-backup-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}.json`);
     toast('Backup saved to Downloads.');
@@ -1194,11 +1214,11 @@ async function pickRestore(input) {
   const f = input.files && input.files[0]; input.value = ''; if (!f) return;
   try {
     const data = JSON.parse(await f.text());
-    if (data.app !== 'candy-census' || !Array.isArray(data.votes) || !Array.isArray(data.candies)) throw new Error('bad');
+    if (data.app !== 'candy-census' || !Array.isArray(data.votes)) throw new Error('bad');
     pendingRestore = data;
   } catch { toast("That file isn't a Candy Census backup."); return; }
   const box = $('#restore-box'); if (!box) return;
-  box.innerHTML = `<p class="lockmsg">This backup has ${pendingRestore.candies.length} candies and ${pendingRestore.votes.length} votes, saved ${esc(new Date(pendingRestore.savedAt).toLocaleString())}. Restoring replaces everything on this tablet.</p>
+  box.innerHTML = `<p class="lockmsg">This backup has ${pendingRestore.votes.length} votes, saved ${esc(new Date(pendingRestore.savedAt).toLocaleString())}. Restoring replaces all votes, photos, and settings on this tablet. The candy list always comes from candies.json.</p>
     <div class="row"><button type="button" class="btn ghost small" id="restore-cancel">Cancel</button><button type="button" class="btn danger small" id="restore-go">Replace everything</button></div>`;
 }
 async function doRestore() {
@@ -1209,15 +1229,15 @@ async function doRestore() {
     const settings = { pin:String(d.settings?.pin || '1031'), open:d.settings?.open !== false };
     await txn(['kv', 'votes', 'blobs'], t => {
       const kv = t.objectStore('kv'), vs = t.objectStore('votes'), bs = t.objectStore('blobs');
-      kv.clear(); vs.clear(); bs.clear();
-      kv.put(d.candies, 'candies'); kv.put(settings, 'settings');
+      vs.clear(); bs.clear();
+      kv.put(settings, 'settings');
       d.votes.forEach(v => vs.put(v)); blobs.forEach(b => bs.put(b));
     });
     [...URLS.keys()].forEach(forgetBlob);
     blobs.forEach(b => cacheBlob(b.id, b.blob));
-    S.candies = d.candies; S.settings = settings; S.votes = d.votes.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    S.settings = settings; S.votes = d.votes.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
     refresh(); renderHost(true);
-    toast(`Restored ${d.votes.length} votes and ${d.candies.length} candies.`);
+    toast(`Restored ${d.votes.length} votes.`);
   } catch (err) { toast(`Restore failed. ${storageMsg(err)}`); }
 }
 function hostReveal() {
@@ -1248,10 +1268,10 @@ function hostSettings() {
       <form class="row" id="pin-form"><input class="tin" id="new-pin" inputmode="numeric" maxlength="8" placeholder="New 4–8 digit PIN" style="max-width:240px"><button class="btn small">Change PIN</button></form></div>
     <div class="card-plain"><h4>Kiosk mode</h4><p class="note">Fullscreen works in some browsers. For a locked-down tablet, use Android's app pinning on Chrome and set the screen timeout to its maximum.</p>
       <div class="row"><button type="button" class="btn small" id="fullscreen">Go fullscreen</button></div></div>
-    <div class="card-plain"><h4>Backup</h4><p class="note">Everything lives in this tablet's browser. Save a backup file once the candy list is set up, and again during the party. If Chrome's data ever gets cleared, restore from the newest file.</p>
+    <div class="card-plain"><h4>Backup</h4><p class="note">Votes and guest photos live only in this tablet's browser. Save a backup file once or twice during the party. If Chrome's data ever gets cleared, restore from the newest file.</p>
       <div class="row"><button type="button" class="btn small" id="backup">Save backup file</button><label class="btn small ghost" for="restore-in">Restore from backup</label><input type="file" id="restore-in" accept="application/json,.json" hidden></div>
       <div id="restore-box"></div></div>
-    <div class="card-plain"><h4>After the party</h4><p class="note">Deletes every vote and every guest photo for good. Download the photos first. Your candy list stays. Type CLEAR to confirm.</p>
+    <div class="card-plain"><h4>After the party</h4><p class="note">Deletes every vote and every guest photo for good. Download the photos first. The candy list isn't affected. Type CLEAR to confirm.</p>
       <form class="row" id="wipe-form"><input class="tin" id="wipe-in" placeholder="Type CLEAR" style="max-width:200px" autocomplete="off"><button class="btn danger small">Clear all votes and photos</button></form>
       <p class="note" id="wipe-status"></p></div>
   </section>`;
@@ -1347,6 +1367,55 @@ document.addEventListener('pointerdown', keepAwake, { once:true });
 
 /* ---------- boot ---------- */
 function refresh() { if (S.cur === 'scr-main') renderMain(); renderHost(); }
+async function loadCandies(manual) {
+  let list = null, err = null;
+  try {
+    const r = await fetch('candies.json?t=' + Date.now(), { cache:'no-store' });
+    if (!r.ok) throw new Error(`candies.json returned ${r.status}`);
+    const data = await r.json();
+    S.candyLoadedAt = Date.now();
+    list = parseCandies(data);
+    S.candySource = 'live';
+    if (S.ok) putKV('candiesCache', { list, at:S.candyLoadedAt, problems:S.candyProblems }).catch(() => {});
+  } catch (e) {
+    err = e;
+    const cached = S.ok ? await readKV('candiesCache').catch(() => null) : null;
+    if (cached && Array.isArray(cached.list)) { list = cached.list; S.candySource = 'cached'; S.candyLoadedAt = cached.at; S.candyProblems = cached.problems || []; }
+    else { list = []; S.candySource = 'none'; S.candyProblems = []; }
+  }
+  S.candyError = err ? (err instanceof SyntaxError ? 'it has a typo, so it isn’t valid JSON' : String(err.message || err)) : null;
+  S.candies = list;
+  checkImages();
+  refresh(); renderHost(true);
+  if (manual) toast(err ? `Couldn't load candies.json: ${S.candyError}.` : `Loaded ${list.length} candies.`);
+}
+function parseCandies(data) {
+  const raw = Array.isArray(data) ? data : (data && Array.isArray(data.candies) ? data.candies : null);
+  if (!raw) throw new Error('it needs a "candies" list');
+  const probs = [], seen = new Set(), out = [];
+  raw.forEach((c, i) => {
+    if (!c || typeof c !== 'object') { probs.push(`Entry ${i + 1} isn't a candy, so it was skipped.`); return; }
+    const name = String(c.name || '').trim();
+    if (!name) { probs.push(`Entry ${i + 1} has no name, so it was skipped.`); return; }
+    const id = String(c.id || name).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'candy-' + (i + 1);
+    if (seen.has(id)) { probs.push(`${name} has the same id as another candy, so it was skipped.`); return; }
+    seen.add(id);
+    const catRaw = String(c.category || '').trim().toLowerCase();
+    if (!['chocolate', 'choc', 'other'].includes(catRaw)) probs.push(`${name} has category "${c.category || ''}". Use "chocolate" or "other". It was treated as other.`);
+    out.push({ id, name, cat:/^choc/.test(catRaw) ? 'choc' : 'other', img:c.image ? `${String(c.image).trim()}?v=${S.candyLoadedAt}` : null, tags:Array.isArray(c.tags) ? c.tags.map(t => String(t)) : [] });
+  });
+  S.candyProblems = probs;
+  return out;
+}
+function checkImages() {
+  S.badImages = new Set();
+  S.candies.forEach(c => {
+    if (!c.img) return;
+    const im = new Image();
+    im.onerror = () => { S.badImages.add(c.id); renderHost(); };
+    im.src = c.img;
+  });
+}
 async function boot() {
   renderMain();
   $('#hint').textContent = hints()[0];
@@ -1354,14 +1423,14 @@ async function boot() {
   keepAwake();
   try {
     idb = await openDB();
-    const [candies, settings, votes, blobs] = await Promise.all([readKV('candies'), readKV('settings'), readAll('votes'), readAll('blobs')]);
+    const [settings, votes, blobs] = await Promise.all([readKV('settings'), readAll('votes'), readAll('blobs')]);
     blobs.forEach(b => { if (b && b.blob) cacheBlob(b.id, b.blob); });
-    S.candies = Array.isArray(candies) ? candies : [];
     S.settings = { pin:String(settings?.pin || '1031'), open:settings?.open !== false };
     S.votes = votes.sort((a, b) => (a.ts || 0) - (b.ts || 0));
     S.ok = true;
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch {}
   } catch { S.offline = true; }
+  await loadCandies(false);
   S.ready = true; refresh();
   $('#hint').textContent = hints()[0];
 }
