@@ -1,0 +1,1372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#24130e">
+<title>Great Candy Census</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Nunito:wght@400;600;800;900&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one full-bleed kiosk screen at a time. Factory signage on top, the working area in the middle, controls on a brass rail at the bottom. Deliberately single-theme (a dark chocolate factory floor). */
+:root{
+  color-scheme: dark;
+  --bg:#24130e;
+  --panel:#33201a;
+  --panel-2:#432a20;
+  --line:#6e4935;
+  --cream:#fbead2;
+  --muted:#cdb196;
+  --caramel:#f0ab4f;
+  --caramel-ink:#2b1608;
+  --mint:#8ae0c3;
+  --mint-ink:#0d2a21;
+  --berry:#de5a7e;
+  --berry-ink:#2c0a14;
+  --brass:#c69a5d;
+  --shade:rgba(18,8,5,.82);
+  --f-display:"Shrikhand","Cooper Black",Georgia,serif;
+  --f-body:"Nunito","Trebuchet MS",system-ui,sans-serif;
+  --f-num:"Spline Sans Mono",ui-monospace,Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #3b2117 0%, transparent 60%),
+    radial-gradient(900px 600px at 110% 110%, #301a12 0%, transparent 60%),
+    var(--bg);
+  color:var(--cream);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
+}
+input,button{font:inherit;color:inherit}
+input{user-select:text;-webkit-user-select:text}
+#app{position:relative;height:100%}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;gap:18px;padding:20px 24px;overflow:auto}
+.eyebrow{font:800 .78rem/1 var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
+.note{color:var(--muted);font-size:.95rem}
+
+/* Buttons */
+.btn{font:800 1.05rem/1 var(--f-body);padding:.85em 1.4em;min-height:52px;border-radius:999px;border:2px solid var(--line);background:var(--panel-2);color:var(--cream);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.5em;transition:transform .12s, filter .12s}
+.btn:active{transform:translateY(2px)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.ccard:focus-visible,.duel-card:focus-visible,.chip:focus-visible,.tab:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+.btn.primary{background:var(--caramel);color:var(--caramel-ink);border-color:transparent;box-shadow:0 4px 0 #9a6120}
+.btn.primary:active{box-shadow:0 2px 0 #9a6120}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:var(--berry);color:var(--berry)}
+.btn.danger.armed{background:var(--berry);color:var(--berry-ink)}
+.btn.small{min-height:40px;padding:.55em 1em;font-size:.92rem}
+
+/* Rail (footer) */
+.rail{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px;border-top:3px double var(--line)}
+.rail .status{font:700 1rem var(--f-num);color:var(--muted)}
+
+/* Step indicator */
+.steps{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.steps span{font:800 .78rem/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;padding:.55em .9em;border-radius:999px;border:1.5px solid var(--line);color:var(--muted)}
+.steps span.on{background:var(--brass);border-color:var(--brass);color:var(--caramel-ink)}
+.steps span.done{color:var(--cream);border-color:var(--brass)}
+
+/* ---------- Main screen ---------- */
+.sign{display:flex;align-items:center;gap:18px;justify-content:center;text-align:center}
+.sign h1{font:400 clamp(2.2rem,5.4vw,4.4rem)/1 var(--f-display);color:var(--caramel);text-shadow:0 3px 0 #7d4a17, 0 8px 24px rgba(0,0,0,.45)}
+.sign .eyebrow{margin-bottom:8px}
+.sign-gear{width:clamp(44px,6vw,74px);color:var(--brass);opacity:.85;flex:none}
+.sign-gear svg{display:block;width:100%;animation:spin 22s linear infinite}
+.sign-gear.rev svg{animation-direction:reverse;animation-duration:16s}
+@keyframes spin{to{transform:rotate(360deg)}}
+.main-grid{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;min-height:0}
+.console{display:flex;flex-direction:column;gap:16px;align-items:stretch;min-width:0}
+.meter{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:14px 18px 16px;display:flex;flex-direction:column;align-items:center}
+.meter::before,.meter::after{content:"";position:absolute;top:10px;width:10px;height:10px;border-radius:50%;background:var(--brass);box-shadow:0 0 0 2px #7a5a33 inset}
+.meter::before{left:10px}.meter::after{right:10px}
+.meter svg{width:min(100%,320px);height:auto;display:block}
+.meter-num{font:700 clamp(2rem,4vw,2.8rem)/1 var(--f-num);font-variant-numeric:tabular-nums;color:var(--cream);margin-top:-6px}
+.meter-label{font:800 .8rem var(--f-body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+#needle{transition:transform 1.2s cubic-bezier(.3,1.6,.5,1);transform-origin:120px 120px}
+.ticker{background:repeating-linear-gradient(135deg,#3a241b 0 14px,#35201a 14px 28px);border:2px dashed var(--line);border-radius:18px;padding:14px 18px;min-height:96px}
+.ticker p{font:700 clamp(1.05rem,2vw,1.3rem)/1.35 var(--f-body);margin-top:8px;transition:opacity .35s}
+.ticker p.fade{opacity:0}
+.cast{font:400 clamp(1.8rem,4.2vw,2.9rem)/1 var(--f-display);color:#fff6ea;cursor:pointer;padding:.55em 1em;border-radius:30px;border:7px solid transparent;
+  background:linear-gradient(var(--berry),var(--berry)) padding-box,repeating-linear-gradient(45deg,var(--cream) 0 11px,#b8304f 11px 22px) border-box;
+  box-shadow:0 7px 0 #7c1f37,0 14px 30px rgba(0,0,0,.4);text-shadow:0 2px 0 #8c2341;transition:transform .12s}
+.cast:active{transform:translateY(4px);box-shadow:0 3px 0 #7c1f37}
+.cast:disabled{filter:grayscale(.75) brightness(.7);cursor:not-allowed}
+.cast:focus-visible{outline:3px solid var(--mint);outline-offset:4px}
+.wall{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.wall-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.wall-head h2{font:400 1.5rem var(--f-display);color:var(--cream)}
+.wall-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:16px 12px;overflow:auto;padding:6px 4px 10px;align-content:start;flex:1}
+.pol{background:#f7ecdc;color:#3a2318;padding:7px 7px 6px;border-radius:4px;box-shadow:0 6px 14px rgba(0,0,0,.4);transform:rotate(var(--rot,0deg));display:flex;flex-direction:column;gap:5px;min-width:0}
+.pol .ph{aspect-ratio:1;border-radius:2px;overflow:hidden;background:#d9c2a3;display:grid;place-items:center;max-width:100%}
+.pol .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.pol .mono{font:400 2.4rem var(--f-display);color:#7a4524}
+.pol .cap{font:800 .9rem/1.15 var(--f-body);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wall-empty{grid-column:1/-1;border:2px dashed var(--line);border-radius:16px;padding:28px 18px;text-align:center;color:var(--muted)}
+.wall-empty strong{display:block;font:400 1.4rem var(--f-display);color:var(--cream);margin-bottom:6px}
+.gear{position:absolute;left:10px;bottom:10px;width:46px;height:46px;border:0;background:transparent;color:var(--line);padding:6px;cursor:pointer;border-radius:50%;touch-action:none}
+.gear svg{width:100%;height:100%;display:block;transition:transform 1.5s linear}
+.gear.pressing{color:var(--brass)}
+.gear.pressing svg{transform:rotate(240deg)}
+
+/* ---------- Name screen ---------- */
+.name-grid{flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:center}
+.name-grid h2,.flow-title{font:400 clamp(2rem,4.4vw,3.2rem)/1.05 var(--f-display);color:var(--caramel)}
+.field{display:flex;flex-direction:column;gap:8px;margin-top:22px}
+.field label{font:800 .85rem var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+.field input{background:var(--cream);color:#2a160c;border:0;border-radius:16px;padding:.7em .9em;font:800 1.6rem var(--f-body);min-width:0}
+.field input:focus{outline:3px solid var(--mint);outline-offset:2px}
+.snap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.snap-frame{width:min(100%,300px);aspect-ratio:1;max-width:100%;background:#f7ecdc;padding:10px 10px 40px;border-radius:6px;box-shadow:0 10px 26px rgba(0,0,0,.45);transform:rotate(-2deg);position:relative}
+.snap-frame .ph{width:100%;height:100%;background:#d9c2a3;display:grid;place-items:center;overflow:hidden;border-radius:3px;color:#7a4524;text-align:center;font:800 1rem var(--f-body);padding:10px}
+.snap-frame .ph img{width:100%;height:100%;object-fit:cover}
+.snap-frame .cap{position:absolute;left:0;right:0;bottom:8px;text-align:center;font:800 1.05rem var(--f-body);color:#3a2318;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
+.snap-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* ---------- Rank screen ---------- */
+.flow-head{display:flex;flex-direction:column;gap:10px}
+.flow-head p{color:var(--muted);max-width:70ch}
+.rank-wrap{flex:1;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;min-height:0}
+.slots{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:10px;align-content:start}
+.slots.two{grid-template-columns:1fr 1fr;grid-auto-flow:column}
+.slot{display:flex;align-items:center;gap:10px;min-height:66px;padding:6px 8px 6px 6px;border-radius:16px;background:#1b0e0a;border:2px solid var(--line);box-shadow:inset 0 3px 8px rgba(0,0,0,.5);transition:border-color .15s,background .15s;min-width:0}
+.slot-n{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font:700 1.3rem var(--f-num);background:var(--panel-2);color:var(--brass);border:2px solid var(--line)}
+.slot:first-child .slot-n{background:var(--caramel);color:var(--caramel-ink);border-color:transparent}
+.slot-empty{color:#7d5a45;font:800 .85rem var(--f-body);letter-spacing:.14em;text-transform:uppercase}
+.slot.drop-hot,.pile-wrap.drop-hot{border-color:var(--mint);background:#123027}
+.slot.just{animation:thunk .35s}
+@keyframes thunk{40%{transform:scale(1.03)}}
+.pile-wrap{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0;transition:border-color .15s,background .15s}
+.pile-label{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.pile-label strong{font:400 1.25rem var(--f-display)}
+.pile{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;align-content:start}
+.pile-done{grid-column:1/-1;text-align:center;padding:24px 10px;color:var(--mint);font:800 1.05rem var(--f-body);border:2px dashed #2f5e50;border-radius:14px}
+.ccard{flex:1;display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:14px;background:var(--cream);color:#2a160c;box-shadow:0 3px 0 #b59674;cursor:grab;touch-action:none;min-width:0;min-height:54px}
+.ccard .cname{font:900 1.02rem/1.15 var(--f-body);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-width:0}
+.ccard.lifted{opacity:.25}
+.ccard.ghost{position:fixed;left:0;top:0;z-index:90;pointer-events:none;box-shadow:0 18px 30px rgba(0,0,0,.5);flex:none}
+.cart{flex:none;width:46px;height:46px;border-radius:10px;object-fit:contain;background:#efe0c9;display:block}
+span.cart{display:grid;place-items:center;font:400 1.15rem var(--f-display);color:#fff7ec;background:var(--wc,#8a4b2a);background-image:repeating-linear-gradient(-45deg,rgba(255,255,255,.16) 0 6px,transparent 6px 12px)}
+.cat-other .cart{outline:2px solid var(--mint)}
+.cat-choc .cart{outline:2px solid var(--caramel)}
+
+/* ---------- Showdown ---------- */
+.duel{flex:1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center}
+.duel-card{border:0;cursor:pointer;border-radius:26px;padding:22px 18px;background:var(--cream);color:#2a160c;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 8px 0 #b59674,0 18px 30px rgba(0,0,0,.4);transition:transform .15s;min-width:0}
+.duel-card:active{transform:translateY(5px)}
+.duel-card .cart{width:min(180px,40vw);height:min(180px,40vw);border-radius:20px;font-size:3.4rem}
+.duel-card .dn{font:400 clamp(1.4rem,3vw,2.2rem)/1.1 var(--f-display);text-align:center}
+.duel-card .dl{font:800 .8rem var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:#8a5a3a}
+.duel.hate .duel-card{box-shadow:0 8px 0 #9e3553,0 18px 30px rgba(0,0,0,.4);outline:4px solid var(--berry)}
+.vs{font:400 clamp(2rem,5vw,3.6rem) var(--f-display);color:var(--brass)}
+.duel.hate .vs{color:var(--berry)}
+
+/* ---------- Thanks ---------- */
+.thanks-grid{flex:1;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:34px;align-items:center}
+.thanks-grid .pol{width:min(100%,300px);justify-self:center;--rot:-3deg;padding:10px 10px 12px}
+.thanks-grid .pol .cap{font-size:1.15rem}
+.thanks h2{font:400 clamp(2.2rem,5vw,3.6rem)/1.05 var(--f-display);color:var(--caramel);margin:10px 0 18px}
+.facts{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:10px}
+.facts li{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 16px;font:700 1.12rem/1.35 var(--f-body)}
+.facts li::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--mint);margin-right:10px;vertical-align:middle}
+
+/* ---------- Overlays ---------- */
+.overlay{position:fixed;inset:0;background:var(--shade);display:grid;place-items:center;z-index:60;padding:16px}
+.box{background:var(--panel);border:2px solid var(--line);border-radius:24px;padding:22px;width:min(100%,380px);display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center}
+.box h3{font:400 1.6rem var(--f-display);color:var(--caramel)}
+.pin-dots{display:flex;gap:10px;min-height:20px}
+.pin-dots i{width:16px;height:16px;border-radius:50%;background:var(--cream)}
+.pin-dots.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.pad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
+.pad button{height:64px;border-radius:16px;border:2px solid var(--line);background:var(--panel-2);font:700 1.5rem var(--f-num);cursor:pointer}
+.pad button:active{background:var(--line)}
+.spin-gear{width:72px;color:var(--caramel)}
+.spin-gear svg{width:100%;display:block;animation:spin 2.4s linear infinite}
+
+/* ---------- Host ---------- */
+.host{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column}
+.host-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-bottom:3px double var(--line)}
+.host-head h2{font:400 1.6rem var(--f-display);color:var(--caramel);margin-right:auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:2px solid var(--line);background:transparent;border-radius:999px;padding:.5em 1em;font:800 .95rem var(--f-body);cursor:pointer;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--brass);border-color:var(--brass);color:var(--caramel-ink)}
+.host-body{flex:1;overflow:auto;padding:18px 20px 40px;user-select:text;-webkit-user-select:text}
+.hpanel{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.hp-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hp-head h3{font:400 1.5rem var(--f-display)}
+.lockmsg{background:#3a2a12;border:2px solid var(--caramel);color:var(--cream);border-radius:14px;padding:12px 14px}
+.add-form{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:12px}
+.tin{background:var(--cream);color:#2a160c;border:0;border-radius:12px;padding:.6em .8em;font:800 1.05rem var(--f-body);min-width:0}
+.tin:focus{outline:3px solid var(--mint);outline-offset:2px}
+.add-form .tin{flex:1 1 220px}
+.seg{display:inline-flex;border:2px solid var(--line);border-radius:999px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:.55em 1em;font:800 .9rem var(--f-body);cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--caramel);color:var(--caramel-ink)}
+.seg button.on[data-cat="other"]{background:var(--mint);color:var(--mint-ink)}
+.seg button:disabled{cursor:not-allowed;opacity:.6}
+.clist{display:flex;flex-direction:column;gap:10px}
+.crow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:start;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:12px}
+.cthumb{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font:800 .72rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+.cthumb .cart{width:72px;height:72px;font-size:1.6rem}
+.cmain{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:.3em .75em;font:700 .82rem var(--f-body);cursor:pointer;color:var(--muted)}
+.chip.on{background:var(--cream);color:#2a160c;border-color:var(--cream)}
+.cside{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.vlist{display:flex;flex-direction:column;gap:8px}
+.vrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:8px 10px}
+.vrow .vth{width:52px;height:52px;border-radius:8px;overflow:hidden;background:#d9c2a3;display:grid;place-items:center;font:400 1.3rem var(--f-display);color:#7a4524}
+.vrow .vth img{width:100%;height:100%;object-fit:cover}
+.vrow strong{font:900 1.05rem var(--f-body)}
+.vrow .vmeta{color:var(--muted);font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vrow time{font:500 .88rem var(--f-num);color:var(--brass)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:16px 12px}
+.card-plain{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card-plain h4{margin:0;font:900 1.1rem var(--f-body)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.standings{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.standings ol{margin:0;padding-left:1.6em;display:flex;flex-direction:column;gap:4px}
+.standings li{font-weight:700}
+.standings li span{font:500 .9rem var(--f-num);color:var(--brass);margin-left:6px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--cream);color:#2a160c;font:800 1rem var(--f-body);padding:.8em 1.3em;border-radius:999px;z-index:100;box-shadow:0 10px 26px rgba(0,0,0,.5);max-width:calc(100% - 32px);text-align:center}
+
+/* ---------- Reveal ---------- */
+.reveal{align-items:center;justify-content:center;text-align:center;cursor:pointer;background:radial-gradient(900px 600px at 50% 40%,#3d2218 0%,transparent 70%)}
+.rv-ctrl{position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:5}
+.rv-ctrl .btn{opacity:.55}
+.rv-hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#8a6a52;font:800 .8rem var(--f-body);letter-spacing:.14em;text-transform:uppercase}
+.rv-stage{width:min(100%,1100px);display:flex;flex-direction:column;align-items:center;gap:18px}
+.rv-big{font:400 clamp(2.6rem,7vw,5.6rem)/1 var(--f-display);color:var(--caramel);text-shadow:0 4px 0 #7d4a17}
+.rv-sub{font:700 clamp(1.1rem,2.2vw,1.5rem)/1.4 var(--f-body);color:var(--muted);max-width:44ch}
+.rv-q{width:min(40vw,220px);aspect-ratio:1;border-radius:28px;border:4px dashed var(--brass);display:grid;place-items:center;font:400 6rem var(--f-display);color:var(--brass);animation:wobble 1.6s ease-in-out infinite}
+@keyframes wobble{50%{transform:rotate(4deg) scale(1.03)}}
+.rv-hero{display:flex;flex-direction:column;align-items:center;gap:14px;animation:rise .6s cubic-bezier(.2,1.4,.4,1)}
+.rv-hero .cart{width:min(42vw,240px);height:min(42vw,240px);border-radius:30px;font-size:4.4rem;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.rv-hero .nm{font:400 clamp(2.4rem,6vw,4.6rem)/1.05 var(--f-display);color:var(--cream)}
+.rv-hero.bad .cart{outline:6px solid var(--berry)}
+.rv-hero.good .cart{outline:6px solid var(--caramel)}
+@keyframes rise{from{transform:translateY(40px) scale(.8);opacity:0}}
+.board{list-style:none;margin:0;padding:0;width:100%;display:grid;grid-template-columns:1fr;gap:10px;text-align:left}
+.board.two{grid-template-columns:1fr 1fr;grid-auto-flow:column}
+.plate{display:flex;align-items:center;gap:12px;min-height:58px;padding:6px 14px 6px 6px;border-radius:14px;background:#1b0e0a;border:2px solid var(--line)}
+.plate .pn{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font:700 1.25rem var(--f-num);background:var(--panel-2);color:var(--brass)}
+.plate .q{font:400 1.4rem var(--f-display);color:#6e4935}
+.plate .pnm{font:900 1.15rem var(--f-body);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plate .pts{font:700 1rem var(--f-num);color:var(--brass);font-variant-numeric:tabular-nums}
+.plate.shown{background:var(--cream);color:#2a160c;border-color:var(--cream)}
+.plate.pop{animation:rise .5s cubic-bezier(.2,1.4,.4,1)}
+.plate.winner{background:var(--caramel);border-color:var(--caramel);box-shadow:0 0 0 4px #7d4a17,0 0 40px rgba(240,171,79,.55)}
+.plate.winner .pn{background:var(--caramel-ink);color:var(--caramel)}
+.divide{width:min(100%,800px);display:flex;flex-direction:column;gap:10px}
+.dbar{height:64px;border-radius:999px;overflow:hidden;display:flex;border:3px solid var(--line)}
+.dbar .a{background:var(--caramel);transition:flex-basis 1.6s cubic-bezier(.3,1.3,.5,1)}
+.dbar .b{background:var(--mint);flex:1}
+.dlabels{display:flex;justify-content:space-between;font:400 clamp(1.3rem,3vw,2rem) var(--f-display)}
+.dlabels .a{color:var(--caramel)}.dlabels .b{color:var(--mint)}
+.mosaic{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;width:100%;max-height:46vh;overflow:hidden}
+.cam-box{display:flex;flex-direction:column;align-items:center;gap:18px}
+.cam-view{position:relative;width:min(88vw,66vh);aspect-ratio:1;max-width:100%;border-radius:24px;overflow:hidden;background:#000;border:6px solid var(--cream);box-shadow:0 18px 40px rgba(0,0,0,.6)}
+.cam-view video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+.cam-count{position:absolute;inset:0;display:grid;place-items:center;font:400 clamp(5rem,16vw,9rem)/1 var(--f-display);color:#fff7ec;text-shadow:0 6px 0 #7d4a17,0 0 30px rgba(0,0,0,.6)}
+.cam-view.flash::after{content:"";position:absolute;inset:0;background:#fff;animation:flash .5s forwards}
+@keyframes flash{to{opacity:0}}
+.cam-box .btn{min-height:60px;font-size:1.2rem}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:95;width:100%;height:100%}
+
+/* ---------- Narrow screens ---------- */
+@media (max-width:820px){
+  .screen{padding:16px}
+  .main-grid,.name-grid,.rank-wrap,.thanks-grid{grid-template-columns:1fr}
+  .duel{grid-template-columns:1fr}
+  .slots.two,.board.two{grid-template-columns:1fr;grid-auto-flow:row}
+  .crow{grid-template-columns:auto minmax(0,1fr)}
+  .cside{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:wrap}
+  .sign-gear{display:none}
+  .pad{grid-template-columns:repeat(3,64px)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MAIN -->
+  <section id="scr-main" class="screen">
+    <header class="sign">
+      <div class="sign-gear" data-gear="14"></div>
+      <div>
+        <div class="eyebrow">Factory Taste Trials · Halloween Night</div>
+        <h1>The Great Candy Census</h1>
+      </div>
+      <div class="sign-gear rev" data-gear="10"></div>
+    </header>
+    <div class="main-grid">
+      <div class="console">
+        <div class="meter" aria-live="polite">
+          <svg viewBox="0 0 240 140" aria-hidden="true">
+            <path d="M20 120 A100 100 0 0 1 220 120" fill="none" stroke="#1b0e0a" stroke-width="22" stroke-linecap="round"/>
+            <path d="M20 120 A100 100 0 0 1 220 120" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round"/>
+            <defs><linearGradient id="gaugeGrad" x1="0" x2="1"><stop offset="0" stop-color="#8ae0c3"/><stop offset=".5" stop-color="#f0ab4f"/><stop offset="1" stop-color="#de5a7e"/></linearGradient></defs>
+            <g id="ticks"></g>
+            <g id="needle" style="transform:rotate(-90deg)">
+              <line x1="120" y1="120" x2="120" y2="36" stroke="#fbead2" stroke-width="5" stroke-linecap="round"/>
+            </g>
+            <circle cx="120" cy="120" r="11" fill="#c69a5d" stroke="#7a5a33" stroke-width="3"/>
+          </svg>
+          <div class="meter-num" id="m-count">0</div>
+          <div class="meter-label">Taste-O-Meter · tasters logged</div>
+        </div>
+        <div class="ticker">
+          <div class="eyebrow">Factory whispers</div>
+          <p id="hint">Warming up the machines…</p>
+        </div>
+        <button id="cast" class="cast" disabled>Cast my vote!</button>
+        <p id="cast-note" class="note" style="text-align:center">Warming up the machines…</p>
+      </div>
+      <div class="wall">
+        <div class="wall-head"><h2>The Tasting Ledger</h2><span class="note" id="wall-count"></span></div>
+        <div id="wall" class="wall-grid"></div>
+      </div>
+    </div>
+    <button id="gear" class="gear" aria-label="Factory controls (press and hold)" data-gear="9"></button>
+  </section>
+
+  <!-- NAME -->
+  <section id="scr-name" class="screen" hidden>
+    <div class="steps" data-steps></div>
+    <div class="name-grid">
+      <div>
+        <h2>Sign the tasting ledger</h2>
+        <div class="field">
+          <label for="in-name">Your name</label>
+          <input id="in-name" maxlength="32" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="e.g. Chhun">
+        </div>
+        <p class="note" style="margin-top:12px">Vote as many times as you like. Your photo is optional and goes up on the ledger wall.</p>
+      </div>
+      <div class="snap">
+        <div class="snap-frame"><div class="ph" id="snap-ph">No photo yet</div><div class="cap" id="snap-cap"></div></div>
+        <div class="snap-btns">
+          <button class="btn" id="snap-btn">Snap a photo</button>
+          <button id="snap-clear" class="btn ghost" hidden>Remove photo</button>
+        </div>
+        <input id="in-photo" type="file" accept="image/*" capture="user" hidden>
+      </div>
+    </div>
+    <footer class="rail">
+      <button id="name-back" class="btn ghost">Cancel</button>
+      <button id="name-next" class="btn primary" disabled>Start tasting</button>
+    </footer>
+  </section>
+
+  <!-- RANK -->
+  <section id="scr-rank" class="screen" hidden>
+    <div class="flow-head">
+      <div class="steps" data-steps></div>
+      <h2 class="flow-title" id="rank-title">Rank the Chocolates</h2>
+      <p>Best at #1. Drag each candy into a numbered chute. Tap a candy on the tray to drop it into the next open chute, or tap a ranked candy to send it back.</p>
+    </div>
+    <div class="rank-wrap" id="rank-wrap">
+      <ol id="slots" class="slots"></ol>
+      <div class="pile-wrap" id="pile-wrap">
+        <div class="pile-label"><strong>The tasting tray</strong><span class="note" id="pile-count"></span></div>
+        <div id="pile" class="pile"></div>
+      </div>
+    </div>
+    <footer class="rail">
+      <button id="rank-back" class="btn ghost">Back</button>
+      <span class="status" id="rank-status"></span>
+      <button id="rank-lock" class="btn primary" disabled>Lock it in</button>
+    </footer>
+  </section>
+
+  <!-- SHOWDOWN -->
+  <section id="scr-show" class="screen" hidden>
+    <div class="flow-head">
+      <div class="steps" data-steps></div>
+      <h2 class="flow-title" id="show-title">The Showdown</h2>
+      <p id="show-sub"></p>
+    </div>
+    <div class="duel" id="duel"></div>
+    <footer class="rail"><button id="show-back" class="btn ghost">Back</button><span class="status" id="show-status"></span></footer>
+  </section>
+
+  <!-- THANKS -->
+  <section id="scr-thanks" class="screen thanks" hidden>
+    <div class="thanks-grid">
+      <div class="pol" id="th-pol"></div>
+      <div>
+        <div class="eyebrow">Verdict received</div>
+        <h2 id="th-title">Thanks!</h2>
+        <ul class="facts" id="th-facts"></ul>
+        <div class="row">
+          <button id="th-done" class="btn primary">Back to the factory floor</button>
+          <span class="note" id="th-timer"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REVEAL -->
+  <section id="scr-reveal" class="screen reveal" hidden>
+    <div class="rv-ctrl">
+      <button class="btn small ghost" id="rv-prev" aria-label="Previous">Back</button>
+      <button class="btn small ghost" id="rv-exit">Exit</button>
+    </div>
+    <div class="rv-stage" id="rv-stage"></div>
+    <div class="rv-hint">Tap to continue</div>
+  </section>
+</div>
+
+<!-- PIN -->
+<div id="pin" class="overlay" hidden>
+  <div class="box" role="dialog" aria-label="Enter host PIN">
+    <h3>Factory controls</h3>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div class="pad" id="pad"></div>
+    <button id="pin-cancel" class="btn ghost small">Cancel</button>
+  </div>
+</div>
+
+<!-- SAVING -->
+<div id="saving" class="overlay" hidden>
+  <div class="box">
+    <div class="spin-gear" data-gear="12"></div>
+    <p id="saving-msg" style="font:800 1.15rem var(--f-body)">Sending your verdict down the pipes…</p>
+    <div class="row" id="saving-btns" hidden>
+      <button class="btn ghost" id="saving-cancel">Discard vote</button>
+      <button class="btn primary" id="saving-retry">Try again</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAMERA -->
+<div id="cam" class="overlay" hidden>
+  <div class="cam-box">
+    <div class="cam-view" id="cam-view"><video id="cam-video" playsinline muted autoplay></video><div id="cam-count" class="cam-count" hidden></div></div>
+    <div class="row">
+      <button id="cam-cancel" class="btn ghost">Cancel</button>
+      <button id="cam-shoot" class="btn primary">Take photo</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOST -->
+<div id="host" class="host" hidden>
+  <header class="host-head">
+    <h2>Factory controls</h2>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-tab="candies">Candies</button>
+      <button class="tab" role="tab" data-tab="votes">Votes</button>
+      <button class="tab" role="tab" data-tab="photos">Photos</button>
+      <button class="tab" role="tab" data-tab="reveal">Reveal</button>
+      <button class="tab" role="tab" data-tab="settings">Settings</button>
+    </nav>
+    <button id="host-close" class="btn small">Close</button>
+  </header>
+  <div class="host-body" id="host-body"></div>
+</div>
+
+<canvas id="confetti" hidden></canvas>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const TAGS = ['Nuts','Peanut butter','Caramel','Nougat','Wafer','Crispy','Coconut','White chocolate','Chewy','Gummy','Sour','Fruity','Mint','Hard candy','Marshmallow'];
+const CATN = { choc: 'Chocolates', other: 'Everything else' };
+const WRAP = ['#a3402c','#3d67a8','#c48b1f','#4f8a3a','#7f3c96','#c0581b','#2b8681','#a8325f'];
+const S = { ok:false, ready:false, offline:false,
+  candies:[], votes:[], settings:{ pin:'1031', open:true }, cur:'scr-main' };
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hash = s => { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) | 0; return Math.abs(h); };
+const last = a => a[a.length - 1];
+const catOf = c => c && c.cat === 'choc' ? 'choc' : 'other';
+const candyMap = () => Object.fromEntries(S.candies.map(c => [c.id, c]));
+const initials = n => (String(n).trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2) || '?').toUpperCase();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const uid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+/* ---------- on-tablet storage (IndexedDB) ---------- */
+let idb = null;
+const BLOBS = new Map(), URLS = new Map();
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('candy-census', 1);
+    r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('kv'); d.createObjectStore('votes', { keyPath:'id' }); d.createObjectStore('blobs', { keyPath:'id' }); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); r.onblocked = () => rej(new Error('blocked'));
+  });
+}
+function txn(stores, fn) {
+  return new Promise((res, rej) => {
+    const t = idb.transaction(stores, 'readwrite');
+    try { fn(t); } catch (e) { rej(e); return; }
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+}
+function readAll(store) { return new Promise((res, rej) => { const r = idb.transaction(store).objectStore(store).getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }); }
+function readKV(key) { return new Promise((res, rej) => { const r = idb.transaction('kv').objectStore('kv').get(key); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+const putKV = (k, v) => txn(['kv'], t => t.objectStore('kv').put(v, k));
+function cacheBlob(id, blob) { if (URLS.has(id)) URL.revokeObjectURL(URLS.get(id)); BLOBS.set(id, blob); URLS.set(id, URL.createObjectURL(blob)); }
+function forgetBlob(id) { if (URLS.has(id)) URL.revokeObjectURL(URLS.get(id)); URLS.delete(id); BLOBS.delete(id); }
+const blobURL = id => URLS.get(id) || '';
+async function storeBlob(blob) { const id = uid(); await txn(['blobs'], t => t.objectStore('blobs').put({ id, blob })); cacheBlob(id, blob); return id; }
+function removeBlob(id) { forgetBlob(id); return txn(['blobs'], t => t.objectStore('blobs').delete(id)).catch(() => {}); }
+const storageMsg = err => err && err.name === 'QuotaExceededError' ? 'The tablet is out of storage space.' : "The tablet couldn't save that.";
+function saveFile(blob, name) {
+  const a = document.createElement('a'), u = URL.createObjectURL(blob);
+  a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 60000);
+}
+
+/* ---------- gears ---------- */
+function gearSVG(n) {
+  const ro = 46, ri = 37, hole = 13, step = Math.PI * 2 / n; let d = '';
+  for (let i = 0; i < n; i++) {
+    const a = i * step;
+    [[a - step * .27, ri], [a - step * .14, ro], [a + step * .14, ro], [a + step * .27, ri]].forEach(([g, r], j) => {
+      d += (i === 0 && j === 0 ? 'M' : 'L') + (Math.cos(g) * r).toFixed(2) + ' ' + (Math.sin(g) * r).toFixed(2) + ' ';
+    });
+  }
+  d += `Z M ${hole} 0 A ${hole} ${hole} 0 1 0 ${-hole} 0 A ${hole} ${hole} 0 1 0 ${hole} 0 Z`;
+  return `<svg viewBox="-50 -50 100 100" aria-hidden="true"><path d="${d}" fill="currentColor" fill-rule="evenodd"/></svg>`;
+}
+$$('[data-gear]').forEach(el => el.insertAdjacentHTML('beforeend', gearSVG(+el.dataset.gear)));
+
+/* ---------- candy art ---------- */
+function art(c, cls = '') {
+  if (!c) return `<span class="cart ${cls}" style="--wc:#5a3a2a">?</span>`;
+  if (c.img && blobURL(c.img)) return `<img class="cart ${cls}" src="${blobURL(c.img)}" alt="" draggable="false">`;
+  return `<span class="cart ${cls}" style="--wc:${WRAP[hash(c.id) % WRAP.length]}">${esc(initials(c.name))}</span>`;
+}
+const cardHTML = c => `<div class="ccard cat-${catOf(c)}" data-id="${esc(c.id)}" tabindex="0">${art(c)}<span class="cname">${esc(c.name)}</span></div>`;
+function polHTML(v, rot = true) {
+  const r = rot ? ((hash(v.id || v.name) % 7) - 3) : -3;
+  const ph = v.photo && blobURL(v.photo) ? `<img src="${blobURL(v.photo)}" alt="" data-fallback="${esc(initials(v.name))}">` : `<span class="mono">${esc(initials(v.name))}</span>`;
+  return `<div class="pol" style="--rot:${r}deg"><div class="ph">${ph}</div><div class="cap">${esc(v.name)}</div></div>`;
+}
+document.addEventListener('error', e => {
+  const t = e.target;
+  if (t.tagName === 'IMG' && t.dataset.fallback !== undefined && !t.dataset.failed) {
+    t.dataset.failed = '1'; t.replaceWith(Object.assign(document.createElement('span'), { className:'mono', textContent:t.dataset.fallback }));
+  }
+}, true);
+
+/* ---------- screens ---------- */
+function show(id) { $$('.screen').forEach(s => { s.hidden = s.id !== id; }); S.cur = id; if (id === 'scr-main') renderMain(); }
+let toastT;
+function toast(msg) {
+  let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200);
+}
+
+/* ---------- tally ---------- */
+function tally() {
+  const map = candyMap();
+  const R = { n:S.votes.length, pts:{}, firsts:{}, lasts:{}, hate:{}, fav:{}, pos:{}, divide:{ choc:0, other:0 } };
+  const add = (o, k, v = 1) => { o[k] = (o[k] || 0) + v; };
+  for (const v of S.votes) {
+    for (const cat of ['choc', 'other']) {
+      const L = v[cat] || [];
+      L.forEach((id, i) => {
+        add(R.pts, id, L.length - i);
+        if (L.length > 1) {
+          (R.pos[id] = R.pos[id] || []).push(i / (L.length - 1));
+          if (i === 0) add(R.firsts, id);
+          if (i === L.length - 1) add(R.lasts, id);
+        }
+      });
+    }
+    if (v.fav) { add(R.fav, v.fav); if (v.favCat) R.divide[v.favCat]++; }
+    if (v.hate) add(R.hate, v.hate);
+  }
+  const stand = cat => S.candies.filter(c => catOf(c) === cat)
+    .map(c => ({ c, pts:R.pts[c.id] || 0, firsts:R.firsts[c.id] || 0 }))
+    .sort((a, b) => b.pts - a.pts || b.firsts - a.firsts || a.c.name.localeCompare(b.c.name));
+  R.stand = { choc:stand('choc'), other:stand('other') };
+  let bad = null;
+  for (const c of S.candies) {
+    const h = R.hate[c.id] || 0, l = R.lasts[c.id] || 0, sc = h * 2 + l;
+    if (sc > 0 && (!bad || sc > bad.sc)) bad = { c, sc, hate:h, lasts:l };
+  }
+  R.despised = bad;
+  let sup = null;
+  for (const c of S.candies) {
+    const f = R.fav[c.id] || 0;
+    if (f > 0 && (!sup || f > sup.f || (f === sup.f && (R.pts[c.id] || 0) > (R.pts[sup.c.id] || 0)))) sup = { c, f };
+  }
+  R.supreme = sup;
+  let dv = null;
+  for (const [id, arr] of Object.entries(R.pos)) {
+    if (arr.length < 3 || !map[id]) continue;
+    const m = arr.reduce((a, b) => a + b, 0) / arr.length;
+    const va = arr.reduce((a, b) => a + (b - m) ** 2, 0) / arr.length;
+    if (!dv || va > dv.v) dv = { c:map[id], v:va };
+  }
+  R.divisive = dv && dv.v > 0.06 ? dv.c : null;
+  R.changes = { choc:leadChanges('choc'), other:leadChanges('other') };
+  return R;
+}
+function leadChanges(cat) {
+  const p = {}; let leader = null, ch = 0;
+  for (const v of S.votes) {
+    const L = v[cat] || [];
+    if (!L.length) continue;
+    L.forEach((id, i) => { p[id] = (p[id] || 0) + L.length - i; });
+    let top = null; for (const k in p) if (top === null || p[k] > p[top]) top = k;
+    if (leader !== null && top !== leader) ch++;
+    leader = top;
+  }
+  return ch;
+}
+
+/* ---------- hints ---------- */
+function hints() {
+  const T = tally(), n = T.n, H = [];
+  if (n < 3) return [
+    'The Taste-O-Meter needs more data. Be one of the first tasters!',
+    'Clues about the leaders unlock after a few votes.',
+    'You can vote as many times as you like. Every vote counts.'
+  ];
+  H.push(`${n} tasters have signed the ledger so far.`);
+  for (const cat of ['choc', 'other']) {
+    const s = T.stand[cat]; if (s.length < 2 || !s[0].pts) continue;
+    const word = cat === 'choc' ? 'chocolate' : 'non-chocolate';
+    const gap = (s[0].pts - s[1].pts) / s[0].pts;
+    H.push(gap < .06 ? `The ${word} race is neck and neck.` : gap < .18 ? `The ${word} leader is ahead, but only just.` : `One ${word} is pulling away from the pack.`);
+    const lead = s[0].c;
+    if (lead.tags && lead.tags.length) H.push(`Clue: the leading ${word} is tagged “${lead.tags[hash(lead.id + n) % lead.tags.length]}”.`);
+    const letters = (lead.name.match(/[a-z]/gi) || []).length;
+    H.push(`Clue: the leading ${word}'s name has ${letters} letters.`);
+    if (T.changes[cat] > 0) H.push(`The top ${word} spot has changed hands ${T.changes[cat]} ${T.changes[cat] === 1 ? 'time' : 'times'} tonight.`);
+  }
+  const d = T.divide, tot = d.choc + d.other;
+  if (tot >= 3) {
+    const p = d.choc / tot;
+    H.push(Math.abs(p - .5) < .08 ? 'The Great Divide is almost a tie: chocolate versus everything else.' : `${p > .5 ? 'Chocolate' : 'Everything else'} is winning the Great Divide, for now.`);
+  }
+  if (T.despised) H.push(`The most despised candy so far is ${T.despised.c.cat === 'choc' ? 'a chocolate' : 'not a chocolate'}.`);
+  if (T.divisive) H.push(`Most divisive candy: ${T.divisive.name}. Some rank it near the top, others near the bottom.`);
+  return H;
+}
+let hintI = 0;
+function rotateHint() {
+  const el = $('#hint'); const H = hints(); hintI = (hintI + 1) % H.length;
+  el.classList.add('fade');
+  setTimeout(() => { el.textContent = H[hintI % H.length]; el.classList.remove('fade'); }, 350);
+}
+
+/* ---------- main screen ---------- */
+function gaugeMax(n) { return Math.max(20, Math.ceil((n + 5) / 10) * 10); }
+function renderTicks(max) {
+  let g = '';
+  for (let i = 0; i <= 10; i++) {
+    const a = Math.PI - (i / 10) * Math.PI, r1 = 100 - 18, r2 = i % 5 === 0 ? 100 - 30 : 100 - 25;
+    const x1 = 120 + Math.cos(a) * r1, y1 = 120 - Math.sin(a) * r1, x2 = 120 + Math.cos(a) * r2, y2 = 120 - Math.sin(a) * r2;
+    g += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#c69a5d" stroke-width="${i % 5 === 0 ? 3 : 1.5}"/>`;
+    if (i % 5 === 0) {
+      const r3 = 100 - 44, x3 = 120 + Math.cos(a) * r3, y3 = 120 - Math.sin(a) * r3 + 4;
+      g += `<text x="${x3.toFixed(1)}" y="${y3.toFixed(1)}" fill="#cdb196" font-family="Spline Sans Mono, monospace" font-size="11" text-anchor="middle">${Math.round(max * i / 10)}</text>`;
+    }
+  }
+  $('#ticks').innerHTML = g;
+}
+function canVote() { return S.ok && S.ready && S.candies.length > 0 && S.settings.open; }
+function renderMain() {
+  const n = S.votes.length, max = gaugeMax(n);
+  $('#m-count').textContent = n;
+  renderTicks(max);
+  $('#needle').style.transform = `rotate(${-90 + 180 * Math.min(1, n / max)}deg)`;
+  const cast = $('#cast'), note = $('#cast-note');
+  cast.disabled = !canVote();
+  note.textContent = S.offline ? "This browser can't save votes. Make sure Chrome isn't in Incognito mode."
+    : !S.ready ? 'Warming up the machines…'
+    : !S.candies.length ? 'The tasting line opens soon.'
+    : !S.settings.open ? 'Voting is closed. The results are coming!'
+    : 'Takes about a minute. Best enjoyed with a mouthful of candy.';
+  const withPhoto = S.votes.slice().reverse();
+  $('#wall-count').textContent = n ? `${n} ${n === 1 ? 'taster' : 'tasters'}` : '';
+  $('#wall').innerHTML = withPhoto.length
+    ? withPhoto.slice(0, 24).map(v => polHTML(v)).join('')
+    : `<div class="wall-empty"><strong>Your face here</strong>Every taster signs the ledger. Snap a photo when you vote and it shows up on this wall.</div>`;
+}
+
+/* ---------- host long-press + PIN ---------- */
+let lpT;
+const gear = $('#gear');
+gear.addEventListener('pointerdown', e => { e.preventDefault(); gear.classList.add('pressing'); lpT = setTimeout(() => { gear.classList.remove('pressing'); openPin(); }, 1500); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => gear.addEventListener(ev, () => { clearTimeout(lpT); gear.classList.remove('pressing'); }));
+gear.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPin(); } });
+gear.addEventListener('contextmenu', e => e.preventDefault());
+
+let pinEntry = '';
+$('#pad').innerHTML = ['1','2','3','4','5','6','7','8','9','Clear','0','Enter'].map(k => `<button data-k="${k}" ${k.length > 1 ? 'style="font-size:.95rem;font-family:var(--f-body);font-weight:800"' : ''}>${k}</button>`).join('');
+function renderPin() { $('#pin-dots').innerHTML = '<i></i>'.repeat(pinEntry.length); }
+function openPin() { pinEntry = ''; renderPin(); $('#pin').hidden = false; }
+$('#pad').addEventListener('click', e => {
+  const k = e.target.closest('button')?.dataset.k; if (!k) return;
+  if (k === 'Clear') pinEntry = '';
+  else if (k === 'Enter') {
+    if (pinEntry === S.settings.pin) { $('#pin').hidden = true; openHost(); return; }
+    const d = $('#pin-dots'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); pinEntry = '';
+  } else if (pinEntry.length < 8) pinEntry += k;
+  renderPin();
+});
+$('#pin-cancel').onclick = () => { $('#pin').hidden = true; };
+
+/* ---------- guest flow ---------- */
+let D = null, flow = [], R = 'choc', showPhase = 'love', lastAct = Date.now();
+const STEPN = { name:'Ledger', choc:'Chocolates', other:'Everything else', show:'Showdown' };
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function catsNow() { return { choc:S.candies.filter(c => catOf(c) === 'choc'), other:S.candies.filter(c => catOf(c) === 'other') }; }
+function startVote() {
+  if (!canVote()) return;
+  const c = catsNow();
+  D = { name:'', photoBlob:null, photoURL:null, rank:{}, fav:null, hate:null, favCat:null, hateCat:null, step:'name' };
+  for (const cat of ['choc', 'other']) {
+    const ids = c[cat].map(x => x.id);
+    D.rank[cat] = ids.length < 2 ? { order:ids.slice(), pile:[] } : { order:Array(ids.length).fill(null), pile:shuffle(ids) };
+  }
+  flow = ['name'];
+  if (c.choc.length >= 2) flow.push('choc');
+  if (c.other.length >= 2) flow.push('other');
+  if (c.choc.length && c.other.length) flow.push('show');
+  $('#in-name').value = ''; renderSnap(); $('#name-next').disabled = true;
+  go('name');
+}
+function renderSteps() {
+  const i = flow.indexOf(D.step);
+  $$('[data-steps]').forEach(el => { el.innerHTML = flow.map((s, k) => `<span class="${k === i ? 'on' : k < i ? 'done' : ''}">${STEPN[s]}</span>`).join(''); });
+}
+function go(step) {
+  D.step = step; lastAct = Date.now(); renderSteps();
+  if (step === 'name') { show('scr-name'); setTimeout(() => $('#in-name').focus(), 50); }
+  else if (step === 'choc' || step === 'other') { R = step; renderRank(); show('scr-rank'); }
+  else if (step === 'show') { showPhase = 'love'; renderShow(); show('scr-show'); }
+}
+function nextStep() { const i = flow.indexOf(D.step); if (i + 1 < flow.length) go(flow[i + 1]); else submit(); }
+function prevStep() { const i = flow.indexOf(D.step); if (i > 0) go(flow[i - 1]); else abandon(); }
+function abandon() { closeCamera(); if (D?.photoURL) URL.revokeObjectURL(D.photoURL); D = null; show('scr-main'); }
+$('#cast').onclick = startVote;
+
+/* name + photo */
+function renderSnap() {
+  const ph = $('#snap-ph');
+  ph.innerHTML = D?.photoURL ? `<img src="${D.photoURL}" alt="Your photo">` : 'No photo yet. Tap Snap a photo to use the tablet camera.';
+  $('#snap-cap').textContent = $('#in-name').value.trim();
+  $('#snap-btn').textContent = D?.photoURL ? 'Retake photo' : 'Snap a photo';
+  $('#snap-clear').hidden = !D?.photoURL;
+}
+$('#in-name').addEventListener('input', () => { $('#name-next').disabled = !$('#in-name').value.trim(); $('#snap-cap').textContent = $('#in-name').value.trim(); });
+$('#in-name').addEventListener('keydown', e => { if (e.key === 'Enter' && $('#in-name').value.trim()) { e.preventDefault(); $('#name-next').click(); } });
+let camStream = null, camDenied = false, shooting = false;
+async function openCamera() {
+  if (camDenied || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('#in-photo').click(); return; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ ideal:1280 }, height:{ ideal:960 } }, audio:false });
+  } catch {
+    camDenied = true; toast("The live camera isn't available. Tap Snap a photo again to use the camera app."); return;
+  }
+  const v = $('#cam-video'); v.srcObject = camStream; $('#cam').hidden = false;
+  try { await v.play(); } catch {}
+}
+function closeCamera() {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = null; $('#cam-video').srcObject = null; $('#cam').hidden = true; $('#cam-count').hidden = true; shooting = false;
+}
+async function shoot() {
+  if (shooting || !camStream) return; shooting = true;
+  const c = $('#cam-count'); c.hidden = false;
+  for (const n of [3, 2, 1]) { c.textContent = n; await sleep(800); if (!camStream) return; }
+  c.hidden = true;
+  const v = $('#cam-video'), w = v.videoWidth, h = v.videoHeight;
+  if (!w || !h) { closeCamera(); toast("The camera didn't send a picture. Try again."); return; }
+  const view = $('#cam-view'); view.classList.remove('flash'); void view.offsetWidth; view.classList.add('flash');
+  const sq = Math.min(w, h), size = Math.min(900, sq), cv = document.createElement('canvas'); cv.width = cv.height = size;
+  const ctx = cv.getContext('2d'); ctx.translate(size, 0); ctx.scale(-1, 1);
+  ctx.drawImage(v, (w - sq) / 2, (h - sq) / 2, sq, sq, 0, 0, size, size);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', .88));
+  await sleep(350); closeCamera();
+  if (blob && D) { if (D.photoURL) URL.revokeObjectURL(D.photoURL); D.photoBlob = blob; D.photoURL = URL.createObjectURL(blob); renderSnap(); }
+}
+$('#snap-btn').onclick = openCamera;
+$('#cam-shoot').onclick = shoot;
+$('#cam-cancel').onclick = closeCamera;
+$('#in-photo').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f || !D) return;
+  try {
+    const blob = await resizeImage(f, 900, 'image/jpeg', .85);
+    if (D.photoURL) URL.revokeObjectURL(D.photoURL);
+    D.photoBlob = blob; D.photoURL = URL.createObjectURL(blob); renderSnap();
+  } catch { toast('That photo could not be read. Try taking it again.'); }
+});
+$('#snap-clear').onclick = () => { if (D.photoURL) URL.revokeObjectURL(D.photoURL); D.photoBlob = null; D.photoURL = null; renderSnap(); };
+$('#name-back').onclick = abandon;
+$('#name-next').onclick = () => { const n = $('#in-name').value.trim(); if (!n) return; D.name = n.slice(0, 32); nextStep(); };
+
+async function resizeImage(file, max, type, q) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * s)), h = Math.max(1, Math.round(img.naturalHeight * s));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(img, 0, 0, w, h);
+    const b = await new Promise(r => cv.toBlob(r, type, q));
+    return b || file;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+/* rank */
+function renderRank() {
+  const st = D.rank[R], map = candyMap(), N = st.order.length;
+  $('#rank-title').textContent = R === 'choc' ? 'Rank the Chocolates' : 'Rank Everything Else';
+  const slots = $('#slots');
+  slots.classList.toggle('two', N > 6);
+  slots.style.gridTemplateRows = N > 6 ? `repeat(${Math.ceil(N / 2)}, auto)` : '';
+  slots.innerHTML = st.order.map((id, i) => `<li class="slot" data-slot="${i}"><span class="slot-n">${i + 1}</span>${id && map[id] ? cardHTML(map[id]) : `<span class="slot-empty">${i === 0 ? 'Best' : i === N - 1 ? 'Worst' : 'Empty'}</span>`}</li>`).join('');
+  $('#pile').innerHTML = st.pile.length ? st.pile.filter(id => map[id]).map(id => cardHTML(map[id])).join('') : `<p class="pile-done">Tray empty. Rearrange if you like, then lock it in.</p>`;
+  $('#pile-count').textContent = st.pile.length ? `${st.pile.length} to place` : '';
+  $('#rank-status').textContent = st.pile.length ? `${N - st.pile.length} of ${N} ranked` : 'All ranked!';
+  $('#rank-lock').disabled = st.pile.length > 0;
+}
+let drag = null;
+const wrap = $('#rank-wrap');
+function dropTarget(x, y) {
+  const el = document.elementFromPoint(x, y); if (!el) return null;
+  const slot = el.closest('.slot'); if (slot && wrap.contains(slot)) return { kind:'slot', i:+slot.dataset.slot, el:slot, key:'s' + slot.dataset.slot };
+  const pw = el.closest('#pile-wrap'); if (pw) return { kind:'pile', el:pw, key:'p' };
+  return null;
+}
+function clearHot() { $$('.drop-hot').forEach(x => x.classList.remove('drop-hot')); }
+wrap.addEventListener('pointerdown', e => {
+  const card = e.target.closest('.ccard'); if (!card || drag) return;
+  const slot = card.closest('.slot');
+  drag = { id:card.dataset.id, from:slot ? +slot.dataset.slot : 'pile', x:e.clientX, y:e.clientY, el:card, ghost:null, pid:e.pointerId, overKey:null };
+  try { card.setPointerCapture(e.pointerId); } catch {}
+  e.preventDefault();
+});
+wrap.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  if (!drag.ghost) {
+    if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
+    const r = drag.el.getBoundingClientRect();
+    const g = drag.el.cloneNode(true); g.classList.add('ghost'); g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
+    document.body.appendChild(g);
+    drag.ox = drag.x - r.left; drag.oy = drag.y - r.top; drag.ghost = g; drag.el.classList.add('lifted');
+  }
+  drag.ghost.style.transform = `translate(${e.clientX - drag.ox}px, ${e.clientY - drag.oy}px) rotate(-3deg)`;
+  const t = dropTarget(e.clientX, e.clientY), key = t ? t.key : null;
+  if (key !== drag.overKey) { clearHot(); if (t) t.el.classList.add('drop-hot'); drag.overKey = key; }
+});
+function endDrag(e, cancelled) {
+  if (!drag || e.pointerId !== drag.pid) return;
+  const d = drag; drag = null; lastAct = Date.now();
+  if (d.ghost) {
+    d.ghost.remove(); clearHot();
+    const t = cancelled ? null : dropTarget(e.clientX, e.clientY);
+    if (t) moveCandy(d.id, d.from, t); else renderRank();
+  } else if (!cancelled) {
+    const st = D.rank[R];
+    if (d.from === 'pile') { const i = st.order.indexOf(null); if (i >= 0) moveCandy(d.id, 'pile', { kind:'slot', i }); }
+    else moveCandy(d.id, d.from, { kind:'pile' });
+  }
+}
+wrap.addEventListener('pointerup', e => endDrag(e, false));
+wrap.addEventListener('pointercancel', e => endDrag(e, true));
+wrap.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('.ccard'); if (!card) return; e.preventDefault();
+  const slot = card.closest('.slot'), st = D.rank[R];
+  if (!slot) { const i = st.order.indexOf(null); if (i >= 0) moveCandy(card.dataset.id, 'pile', { kind:'slot', i }); }
+  else moveCandy(card.dataset.id, +slot.dataset.slot, { kind:'pile' });
+});
+function moveCandy(id, from, t) {
+  const st = D.rank[R];
+  if (t.kind === 'slot') {
+    const i = t.i;
+    if (from !== i) {
+      const occ = st.order[i]; st.order[i] = id;
+      if (from === 'pile') { st.pile = st.pile.filter(x => x !== id); if (occ) st.pile.push(occ); }
+      else st.order[from] = occ;
+    }
+    renderRank();
+    $(`.slot[data-slot="${i}"]`)?.classList.add('just');
+  } else {
+    if (from !== 'pile') { st.order[from] = null; st.pile.push(id); }
+    renderRank();
+  }
+}
+$('#rank-back').onclick = prevStep;
+$('#rank-lock').onclick = () => { if (!D.rank[R].pile.length) nextStep(); };
+
+/* showdown */
+function renderShow() {
+  const map = candyMap(), love = showPhase === 'love';
+  const a = love ? D.rank.choc.order[0] : last(D.rank.choc.order);
+  const b = love ? D.rank.other.order[0] : last(D.rank.other.order);
+  $('#show-title').textContent = love ? 'The Showdown' : 'The Grudge Match';
+  $('#show-sub').textContent = love ? 'Your #1 chocolate versus your #1 everything else. Only one can win your heart.' : 'Now your two last-place picks. Which one do you dislike more?';
+  $('#show-status').textContent = love ? 'Round 1 of 2' : 'Round 2 of 2';
+  const lab = (cat) => love ? `Your #1 ${cat === 'choc' ? 'chocolate' : 'non-chocolate'}` : `Your last-place ${cat === 'choc' ? 'chocolate' : 'non-chocolate'}`;
+  const card = (id, cat) => `<button class="duel-card" data-id="${esc(id)}" data-cat="${cat}"><span class="dl">${lab(cat)}</span>${art(map[id])}<span class="dn">${esc(map[id]?.name || '?')}</span></button>`;
+  const duel = $('#duel'); duel.classList.toggle('hate', !love);
+  duel.innerHTML = card(a, 'choc') + '<div class="vs">vs</div>' + card(b, 'other');
+}
+$('#duel').addEventListener('click', e => {
+  const b = e.target.closest('.duel-card'); if (!b) return; lastAct = Date.now();
+  if (showPhase === 'love') { D.fav = b.dataset.id; D.favCat = b.dataset.cat; showPhase = 'hate'; renderShow(); }
+  else { D.hate = b.dataset.id; D.hateCat = b.dataset.cat; submit(); }
+});
+$('#show-back').onclick = () => { if (showPhase === 'hate') { showPhase = 'love'; renderShow(); } else prevStep(); };
+
+/* submit */
+let pendingVote = null;
+async function submit() {
+  const map = candyMap();
+  const choc = D.rank.choc.order.filter(Boolean), other = D.rank.other.order.filter(Boolean);
+  const labels = {}; [...choc, ...other].forEach(id => { if (map[id]) labels[id] = map[id].name; });
+  pendingVote = { vote:{ name:D.name, ts:Date.now(), choc, other, fav:D.fav, favCat:D.favCat, hate:D.hate, hateCat:D.hateCat, labels, photo:null }, blob:D.photoBlob, photoURL:D.photoURL, facts:null };
+  pendingVote.facts = makeFacts(pendingVote.vote);
+  await saveVote();
+}
+async function saveVote() {
+  const P = pendingVote; if (!P) return;
+  $('#saving').hidden = false; $('#saving-btns').hidden = true; $('#saving-msg').textContent = 'Sending your verdict down the pipes…';
+  let photoNote = '';
+  try {
+    if (P.blob && !P.vote.photo) {
+      try { P.vote.photo = await storeBlob(P.blob); } catch { photoNote = "Your photo didn't save, but your vote counts."; }
+    }
+    if (!P.vote.id) P.vote.id = uid();
+    await txn(['votes'], t => t.objectStore('votes').put(P.vote));
+  } catch (err) {
+    $('#saving-msg').textContent = `${storageMsg(err)} Tap Try again, or grab the host.`;
+    $('#saving-btns').hidden = false;
+    return;
+  }
+  S.votes = [...S.votes.filter(v => v.id !== P.vote.id), P.vote].sort((a, b) => a.ts - b.ts);
+  await sleep(500);
+  $('#saving').hidden = true;
+  if (photoNote) P.facts.push(photoNote);
+  showThanks(P);
+  pendingVote = null;
+}
+$('#saving-retry').onclick = saveVote;
+$('#saving-cancel').onclick = () => { $('#saving').hidden = true; pendingVote = null; abandon(); };
+
+function makeFacts(v) {
+  const prior = S.votes, map = candyMap(), nm = id => map[id]?.name || v.labels[id] || 'that one', F = [];
+  F.push(`You're taster number ${prior.length + 1} tonight.`);
+  const tc = v.choc[0];
+  if (tc && v.choc.length > 1) {
+    const k = prior.filter(p => (p.choc || [])[0] === tc).length;
+    F.push(k ? `${k} other ${k === 1 ? 'taster' : 'tasters'} also crowned ${nm(tc)} the best chocolate.` : `You're the first to crown ${nm(tc)} the best chocolate.`);
+  }
+  const lo = last(v.other);
+  if (lo && v.other.length > 1) {
+    const k = prior.filter(p => last(p.other || []) === lo).length;
+    F.push(k ? `${nm(lo)} has now been sent to the bottom by ${k + 1} tasters.` : `You're the first to rank ${nm(lo)} dead last.`);
+  }
+  if (v.fav) F.push(`In the showdown you picked ${nm(v.fav)}. Welcome to Team ${v.favCat === 'choc' ? 'Chocolate' : 'Everything Else'}.`);
+  if (v.hate) F.push(`Your candy nemesis: ${nm(v.hate)}.`);
+  return F.slice(0, 4);
+}
+let thT;
+function showThanks(P) {
+  $('#th-pol').outerHTML = `<div class="pol" id="th-pol" style="--rot:-3deg"><div class="ph">${P.photoURL ? `<img src="${P.photoURL}" alt="">` : `<span class="mono">${esc(initials(P.vote.name))}</span>`}</div><div class="cap">${esc(P.vote.name)}</div></div>`;
+  $('#th-title').textContent = `Thanks, ${P.vote.name}!`;
+  $('#th-facts').innerHTML = P.facts.map(f => `<li>${esc(f)}</li>`).join('');
+  show('scr-thanks');
+  let s = 20; clearInterval(thT);
+  const tick = () => { $('#th-timer').textContent = `Returning in ${s}s`; if (s-- <= 0) finishThanks(); };
+  tick(); thT = setInterval(tick, 1000);
+  const url = P.photoURL;
+  finishThanks.url = url;
+}
+function finishThanks() { clearInterval(thT); if (finishThanks.url) setTimeout(() => URL.revokeObjectURL(finishThanks.url), 1000); finishThanks.url = null; D = null; show('scr-main'); }
+$('#th-done').onclick = finishThanks;
+
+/* idle reset */
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { lastAct = Date.now(); }, true));
+setInterval(() => {
+  if (['scr-name', 'scr-rank', 'scr-show'].includes(S.cur) && $('#saving').hidden && Date.now() - lastAct > 150000) abandon();
+}, 5000);
+
+/* ---------- host ---------- */
+let hostTab = 'candies', hostDirty = false;
+function openHost() { $('#host').hidden = false; renderHost(); }
+$('#host-close').onclick = () => { $('#host').hidden = true; renderMain(); };
+$('#tabs').addEventListener('click', e => { const t = e.target.closest('.tab'); if (!t) return; hostTab = t.dataset.tab; renderHost(true); });
+const hostBody = $('#host-body');
+hostBody.addEventListener('focusout', () => { setTimeout(() => { if (hostDirty && !hostBody.contains(document.activeElement)) renderHost(); }, 0); });
+function renderHost(force) {
+  if ($('#host').hidden) return;
+  const ae = document.activeElement;
+  if (!force && ae && hostBody.contains(ae) && ae.tagName === 'INPUT') { hostDirty = true; return; }
+  hostDirty = false;
+  $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === hostTab)));
+  hostBody.innerHTML = ({ candies:hostCandies, votes:hostVotes, photos:hostPhotos, reveal:hostReveal, settings:hostSettings })[hostTab]();
+  if (hostTab === 'reveal' && hostReveal.peek) renderPeek();
+}
+const locked = () => S.votes.length > 0;
+function hostCandies() {
+  const c = catsNow(), L = locked();
+  return `<section class="hpanel">
+    <div class="hp-head"><h3>Candy list</h3><span class="note">${c.choc.length} chocolates · ${c.other.length} everything else</span></div>
+    ${L ? `<p class="lockmsg">Voting has started, so adding, removing, or recategorizing candies is locked to keep the scores fair. You can still rename candies, change tags, and swap photos. Clear all votes in Settings to unlock.</p>` : ''}
+    ${S.ok ? '' : `<p class="lockmsg">This browser can't save data, so changes won't stick. Make sure Chrome isn't in Incognito mode.</p>`}
+    <form class="add-form" id="add-form">
+      <input class="tin" id="add-name" maxlength="40" placeholder="Candy name, e.g. Nerds" ${L ? 'disabled' : ''}>
+      <div class="seg" id="add-cat"><button type="button" data-cat="choc" class="${addCat === 'choc' ? 'on' : ''}" ${L ? 'disabled' : ''}>Chocolate</button><button type="button" data-cat="other" class="${addCat === 'other' ? 'on' : ''}" ${L ? 'disabled' : ''}>Everything else</button></div>
+      <button class="btn primary small" ${L ? 'disabled' : ''}>Add candy</button>
+    </form>
+    <div class="clist">${S.candies.length ? S.candies.map(x => candyRow(x, L)).join('') : `<p class="note">No candies yet. Add your first one above. Each one gets a photo slot and optional flavor tags, which power the clues on the main screen.</p>`}</div>
+  </section>`;
+}
+let addCat = 'choc';
+function candyRow(c, L) {
+  const tags = c.tags || [];
+  return `<div class="crow" data-id="${esc(c.id)}">
+    <label class="cthumb" for="img-${esc(c.id)}">${art(c)}<span>${c.img ? 'Change photo' : 'Add photo'}</span></label>
+    <input type="file" id="img-${esc(c.id)}" accept="image/*" hidden data-act="img">
+    <div class="cmain">
+      <input class="tin" id="name-${esc(c.id)}" value="${esc(c.name)}" maxlength="40" data-act="name" aria-label="Candy name">
+      <div class="tags">${TAGS.map(t => `<button type="button" class="chip ${tags.includes(t) ? 'on' : ''}" data-act="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+    </div>
+    <div class="cside">
+      <div class="seg"><button type="button" data-act="cat" data-cat="choc" class="${catOf(c) === 'choc' ? 'on' : ''}" ${L ? 'disabled' : ''}>Chocolate</button><button type="button" data-act="cat" data-cat="other" class="${catOf(c) === 'other' ? 'on' : ''}" ${L ? 'disabled' : ''}>Everything else</button></div>
+      <button type="button" class="btn ghost danger small" data-act="del" ${L ? 'disabled' : ''}>Remove</button>
+    </div>
+  </div>`;
+}
+let wq = Promise.resolve();
+function saveCandies(list) {
+  S.candies = list; renderHost(); renderMain();
+  wq = wq.then(() => putKV('candies', list)).catch(err => toast(`Couldn't save the candy list. ${storageMsg(err)}`));
+  return wq;
+}
+function updCandy(id, fn) { saveCandies(S.candies.map(c => c.id === id ? fn({ ...c, tags:[...(c.tags || [])] }) : c)); }
+function saveSettings(patch) {
+  S.settings = { ...S.settings, ...patch }; renderHost(); renderMain();
+  wq = wq.then(() => putKV('settings', { ...S.settings })).catch(err => toast(`Couldn't save settings. ${storageMsg(err)}`));
+}
+const armed = new WeakMap();
+function arm(btn, label, fn) {
+  if (btn.classList.contains('armed')) { btn.classList.remove('armed'); fn(); return; }
+  const orig = btn.textContent; btn.classList.add('armed'); btn.textContent = label;
+  setTimeout(() => { if (btn.isConnected) { btn.classList.remove('armed'); btn.textContent = orig; } }, 3500);
+}
+hostBody.addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'add-form') {
+    const n = $('#add-name').value.trim(); if (!n || locked()) return;
+    if (S.candies.some(c => c.name.toLowerCase() === n.toLowerCase())) { toast(`${n} is already on the list.`); return; }
+    $('#add-name').value = ''; $('#add-name').blur();
+    saveCandies([...S.candies, { id:uid(), name:n, cat:addCat, img:null, tags:[] }]);
+    setTimeout(() => $('#add-name')?.focus(), 0);
+  }
+  if (e.target.id === 'pin-form') {
+    const p = $('#new-pin').value.trim();
+    if (!/^\d{4,8}$/.test(p)) { toast('Use 4 to 8 digits.'); return; }
+    $('#new-pin').value = ''; saveSettings({ pin:p }); toast('PIN updated.');
+  }
+  if (e.target.id === 'wipe-form') {
+    if ($('#wipe-in').value.trim().toUpperCase() !== 'CLEAR') { toast('Type CLEAR to confirm.'); return; }
+    wipeVotes();
+  }
+});
+hostBody.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.closest('#add-cat')) { addCat = b.dataset.cat; $$('#add-cat button').forEach(x => x.classList.toggle('on', x === b)); return; }
+  const row = b.closest('.crow'), id = row?.dataset.id, act = b.dataset.act;
+  if (row && act === 'tag') { const t = b.dataset.tag; updCandy(id, c => { c.tags = c.tags.includes(t) ? c.tags.filter(x => x !== t) : [...c.tags, t]; return c; }); return; }
+  if (row && act === 'cat' && !locked()) { updCandy(id, c => { c.cat = b.dataset.cat; return c; }); return; }
+  if (row && act === 'del' && !locked()) {
+    arm(b, 'Tap again to remove', async () => {
+      const c = S.candies.find(x => x.id === id); await saveCandies(S.candies.filter(x => x.id !== id));
+      if (c?.img) removeBlob(c.img);
+    }); return;
+  }
+  const vrow = b.closest('.vrow');
+  if (vrow && b.dataset.act === 'vdel') { arm(b, 'Tap again to delete', () => deleteVote(vrow.dataset.id)); return; }
+  if (b.id === 'dl-photos') downloadPhotos(b);
+  if (b.id === 'backup') backup(b);
+  if (b.id === 'restore-go') doRestore();
+  if (b.id === 'restore-cancel') { pendingRestore = null; const rb = $('#restore-box'); if (rb) rb.innerHTML = ''; }
+  if (b.id === 'start-reveal') startReveal();
+  if (b.id === 'toggle-open') saveSettings({ open:!S.settings.open });
+  if (b.id === 'peek') { hostReveal.peek = !hostReveal.peek; renderHost(true); }
+  if (b.id === 'fullscreen') { const el = document.documentElement; (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => toast("Fullscreen isn't available here. Use the tablet's app pinning instead.")); }
+});
+hostBody.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.id === 'restore-in') { pickRestore(t); return; }
+  const row = t.closest('.crow'); if (!row) return;
+  const id = row.dataset.id;
+  if (t.dataset.act === 'name') { const n = t.value.trim(); if (n) updCandy(id, c => { c.name = n.slice(0, 40); return c; }); else t.value = S.candies.find(c => c.id === id)?.name || ''; }
+  if (t.dataset.act === 'img') {
+    const f = t.files && t.files[0]; t.value = ''; if (!f) return;
+    const lab = row.querySelector('.cthumb span'); if (lab) lab.textContent = 'Saving…';
+    try {
+      const blob = await resizeImage(f, 600, 'image/webp', .9);
+      const nid = await storeBlob(blob);
+      const old = S.candies.find(c => c.id === id)?.img;
+      updCandy(id, c => { c.img = nid; return c; }); await wq;
+      if (old) removeBlob(old);
+    } catch (err) { toast(`That photo didn't save. ${storageMsg(err)}`); renderHost(true); }
+  }
+});
+function timeStr(ts) { return new Date(ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit', second:'2-digit' }); }
+function hostVotes() {
+  const map = candyMap(), nm = (v, id) => map[id]?.name || v.labels?.[id] || '?';
+  const rows = S.votes.slice().reverse().map(v => `<div class="vrow" data-id="${esc(v.id)}">
+    <div class="vth">${v.photo && blobURL(v.photo) ? `<img src="${blobURL(v.photo)}" alt="">` : esc(initials(v.name))}</div>
+    <div style="min-width:0"><strong>${esc(v.name)}</strong> <time>${timeStr(v.ts)}</time>
+      <div class="vmeta">Top chocolate: ${esc(v.choc?.[0] ? nm(v, v.choc[0]) : '—')} · Top other: ${esc(v.other?.[0] ? nm(v, v.other[0]) : '—')}${v.fav ? ' · Showdown: ' + esc(nm(v, v.fav)) : ''}</div></div>
+    <button type="button" class="btn ghost danger small" data-act="vdel">Delete</button>
+  </div>`).join('');
+  return `<section class="hpanel"><div class="hp-head"><h3>Votes</h3><span class="note">${S.votes.length} total, newest first</span></div>
+    ${rows ? `<div class="vlist">${rows}</div>` : '<p class="note">No votes yet. They show up here as guests submit them.</p>'}</section>`;
+}
+async function deleteVote(id) {
+  const v = S.votes.find(x => x.id === id); if (!v) return;
+  try {
+    await txn(['votes'], t => t.objectStore('votes').delete(id));
+    if (v.photo) await removeBlob(v.photo);
+    S.votes = S.votes.filter(x => x.id !== id); refresh();
+    toast(`Deleted ${v.name}'s vote.`);
+  } catch (err) { toast(`Couldn't delete that vote. ${storageMsg(err)}`); }
+}
+function hostPhotos() {
+  const ph = S.votes.filter(v => v.photo && BLOBS.has(v.photo));
+  return `<section class="hpanel"><div class="hp-head"><h3>Guest photos</h3><span class="note">${ph.length} ${ph.length === 1 ? 'photo' : 'photos'}</span></div>
+    <div class="row"><button type="button" class="btn primary" id="dl-photos" ${ph.length ? '' : 'disabled'}>Download all photos (.zip)</button>
+    <span class="note">Saves to the tablet's Downloads folder. Needs an internet connection.</span></div>
+    ${ph.length ? `<div class="pgrid">${ph.slice().reverse().map(v => polHTML(v, false)).join('')}</div>` : '<p class="note">Photos guests take while voting collect here.</p>'}</section>`;
+}
+function loadJSZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; s.onload = () => res(window.JSZip); s.onerror = rej; document.head.appendChild(s); });
+}
+async function downloadPhotos(btn) {
+  const ph = S.votes.filter(v => v.photo && BLOBS.has(v.photo)); if (!ph.length) return;
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Packing photos…';
+  try {
+    const JSZip = await loadJSZip(), zip = new JSZip(), used = {};
+    ph.forEach((v, i) => {
+      const base = (v.name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'guest');
+      used[base] = (used[base] || 0) + 1;
+      zip.file(`${String(i + 1).padStart(2, '0')}-${base}${used[base] > 1 ? '-' + used[base] : ''}.jpg`, BLOBS.get(v.photo));
+    });
+    const blob = await zip.generateAsync({ type:'blob' });
+    saveFile(blob, 'candy-census-photos.zip');
+    toast(`Saved ${ph.length} ${ph.length === 1 ? 'photo' : 'photos'} to Downloads.`);
+  } catch { toast("Couldn't build the zip. Check the tablet's internet connection and try again."); }
+  finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+/* backup + restore */
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+async function backup(btn) {
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Packing…';
+  try {
+    const blobs = {};
+    for (const [id, b] of BLOBS) blobs[id] = { type:b.type, data:await blobToDataURL(b) };
+    const data = { app:'candy-census', version:1, savedAt:Date.now(), candies:S.candies, settings:S.settings, votes:S.votes, blobs };
+    const d = new Date(), p2 = n => String(n).padStart(2, '0');
+    saveFile(new Blob([JSON.stringify(data)], { type:'application/json' }), `candy-census-backup-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}.json`);
+    toast('Backup saved to Downloads.');
+  } catch { toast("Couldn't build the backup file."); }
+  finally { btn.disabled = false; btn.textContent = orig; }
+}
+let pendingRestore = null;
+async function pickRestore(input) {
+  const f = input.files && input.files[0]; input.value = ''; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.app !== 'candy-census' || !Array.isArray(data.votes) || !Array.isArray(data.candies)) throw new Error('bad');
+    pendingRestore = data;
+  } catch { toast("That file isn't a Candy Census backup."); return; }
+  const box = $('#restore-box'); if (!box) return;
+  box.innerHTML = `<p class="lockmsg">This backup has ${pendingRestore.candies.length} candies and ${pendingRestore.votes.length} votes, saved ${esc(new Date(pendingRestore.savedAt).toLocaleString())}. Restoring replaces everything on this tablet.</p>
+    <div class="row"><button type="button" class="btn ghost small" id="restore-cancel">Cancel</button><button type="button" class="btn danger small" id="restore-go">Replace everything</button></div>`;
+}
+async function doRestore() {
+  const d = pendingRestore; if (!d) return; pendingRestore = null;
+  try {
+    const blobs = [];
+    for (const [id, b] of Object.entries(d.blobs || {})) blobs.push({ id, blob:await (await fetch(b.data)).blob() });
+    const settings = { pin:String(d.settings?.pin || '1031'), open:d.settings?.open !== false };
+    await txn(['kv', 'votes', 'blobs'], t => {
+      const kv = t.objectStore('kv'), vs = t.objectStore('votes'), bs = t.objectStore('blobs');
+      kv.clear(); vs.clear(); bs.clear();
+      kv.put(d.candies, 'candies'); kv.put(settings, 'settings');
+      d.votes.forEach(v => vs.put(v)); blobs.forEach(b => bs.put(b));
+    });
+    [...URLS.keys()].forEach(forgetBlob);
+    blobs.forEach(b => cacheBlob(b.id, b.blob));
+    S.candies = d.candies; S.settings = settings; S.votes = d.votes.slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    refresh(); renderHost(true);
+    toast(`Restored ${d.votes.length} votes and ${d.candies.length} candies.`);
+  } catch (err) { toast(`Restore failed. ${storageMsg(err)}`); }
+}
+function hostReveal() {
+  return `<section class="hpanel">
+    <div class="hp-head"><h3>The big reveal</h3><span class="note">${S.votes.length} votes in</span></div>
+    <div class="card-plain"><h4>Start the show</h4>
+      <p class="note">Takes over the screen. Tap anywhere to advance: most despised, everything-else countdown, chocolate countdown, the Great Divide, the Supreme Sweet, then a photo finale.</p>
+      <div class="row"><button type="button" class="btn primary" id="start-reveal" ${S.votes.length ? '' : 'disabled'}>Start the reveal</button></div></div>
+    <div class="card-plain"><h4>Voting is ${S.settings.open ? 'open' : 'closed'}</h4>
+      <p class="note">${S.settings.open ? 'Close voting right before the reveal so nobody sneaks a vote in.' : 'Guests see a "voting is closed" note on the main screen.'}</p>
+      <div class="row"><button type="button" class="btn" id="toggle-open">${S.settings.open ? 'Close voting' : 'Reopen voting'}</button></div></div>
+    <div class="card-plain"><h4>Peek at the standings</h4><p class="note">For the host only. Make sure nobody is looking over your shoulder.</p>
+      <div class="row"><button type="button" class="btn ghost" id="peek">${hostReveal.peek ? 'Hide standings' : 'Show standings'}</button></div>
+      <div id="peek-box"></div></div>
+  </section>`;
+}
+function renderPeek() {
+  const T = tally(), box = $('#peek-box'); if (!box) return;
+  const list = s => s.length ? `<ol>${s.map(x => `<li>${esc(x.c.name)}<span>${x.pts} pts</span></li>`).join('')}</ol>` : '<p class="note">No candies.</p>';
+  const d = T.divide, tot = d.choc + d.other;
+  box.innerHTML = `<div class="standings"><div><h4>Chocolates</h4>${list(T.stand.choc)}</div><div><h4>Everything else</h4>${list(T.stand.other)}</div>
+    <div><h4>Extras</h4><p>Great Divide: ${tot ? Math.round(d.choc / tot * 100) + '% chocolate' : 'no showdowns yet'}</p><p>Most despised: ${T.despised ? esc(T.despised.c.name) : '—'}</p><p>Supreme Sweet: ${T.supreme ? esc(T.supreme.c.name) : '—'}</p></div></div>`;
+}
+function hostSettings() {
+  return `<section class="hpanel">
+    <div class="hp-head"><h3>Settings</h3></div>
+    <div class="card-plain"><h4>Host PIN</h4><p class="note">Opens this menu after you press and hold the gear in the bottom-left corner. The default PIN is 1031.</p>
+      <form class="row" id="pin-form"><input class="tin" id="new-pin" inputmode="numeric" maxlength="8" placeholder="New 4–8 digit PIN" style="max-width:240px"><button class="btn small">Change PIN</button></form></div>
+    <div class="card-plain"><h4>Kiosk mode</h4><p class="note">Fullscreen works in some browsers. For a locked-down tablet, use Android's app pinning on Chrome and set the screen timeout to its maximum.</p>
+      <div class="row"><button type="button" class="btn small" id="fullscreen">Go fullscreen</button></div></div>
+    <div class="card-plain"><h4>Backup</h4><p class="note">Everything lives in this tablet's browser. Save a backup file once the candy list is set up, and again during the party. If Chrome's data ever gets cleared, restore from the newest file.</p>
+      <div class="row"><button type="button" class="btn small" id="backup">Save backup file</button><label class="btn small ghost" for="restore-in">Restore from backup</label><input type="file" id="restore-in" accept="application/json,.json" hidden></div>
+      <div id="restore-box"></div></div>
+    <div class="card-plain"><h4>After the party</h4><p class="note">Deletes every vote and every guest photo for good. Download the photos first. Your candy list stays. Type CLEAR to confirm.</p>
+      <form class="row" id="wipe-form"><input class="tin" id="wipe-in" placeholder="Type CLEAR" style="max-width:200px" autocomplete="off"><button class="btn danger small">Clear all votes and photos</button></form>
+      <p class="note" id="wipe-status"></p></div>
+  </section>`;
+}
+async function wipeVotes() {
+  try {
+    const ids = S.votes.map(v => v.photo).filter(Boolean);
+    await txn(['votes', 'blobs'], t => { t.objectStore('votes').clear(); ids.forEach(id => t.objectStore('blobs').delete(id)); });
+    ids.forEach(forgetBlob); S.votes = []; refresh(); renderHost(true);
+    toast('All votes and photos cleared.');
+  } catch (err) { toast(`Couldn't clear everything. ${storageMsg(err)}`); }
+}
+
+/* ---------- reveal ---------- */
+let RV = null;
+function startReveal() {
+  const T = tally(), slides = [{ k:'intro', steps:1 }];
+  if (T.despised) slides.push({ k:'despised', steps:2 });
+  if (T.stand.other.length) slides.push({ k:'count', cat:'other', steps:T.stand.other.length + 1 });
+  if (T.stand.choc.length) slides.push({ k:'count', cat:'choc', steps:T.stand.choc.length + 1 });
+  if (T.divide.choc + T.divide.other > 0) slides.push({ k:'divide', steps:2 });
+  if (T.supreme) slides.push({ k:'supreme', steps:2 });
+  slides.push({ k:'finale', steps:1 });
+  RV = { T, slides, i:0, step:0 };
+  $('#host').hidden = true; show('scr-reveal'); renderReveal();
+}
+function rvNext() { const s = RV.slides[RV.i]; if (RV.step < s.steps - 1) RV.step++; else if (RV.i < RV.slides.length - 1) { RV.i++; RV.step = 0; } renderReveal(); }
+function rvPrev() { if (RV.step > 0) RV.step--; else if (RV.i > 0) { RV.i--; RV.step = RV.slides[RV.i].steps - 1; } renderReveal(true); }
+function renderReveal(back) {
+  const { T } = RV, s = RV.slides[RV.i], st = RV.step, el = $('#rv-stage');
+  if (s.k === 'intro') {
+    const nc = S.candies.length;
+    el.innerHTML = `<div class="eyebrow">The Great Candy Census</div><div class="rv-big">The results are in</div><p class="rv-sub">${T.n} tasters. ${nc} candies. One official factory verdict.</p>`;
+  } else if (s.k === 'despised') {
+    el.innerHTML = `<div class="eyebrow">Award for the worst</div><div class="rv-big" style="color:var(--berry)">The Most Despised</div>` +
+      (st === 0 ? `<div class="rv-q">?</div><p class="rv-sub">Ranked dead last and chosen as the lesser evil, more than any other candy.</p>`
+        : `<div class="rv-hero bad">${art(T.despised.c)}<div class="nm">${esc(T.despised.c.name)}</div></div><p class="rv-sub">Ranked dead last ${T.despised.lasts} ${T.despised.lasts === 1 ? 'time' : 'times'}, and picked as the worse of two evils ${T.despised.hate} ${T.despised.hate === 1 ? 'time' : 'times'}.</p>`);
+  } else if (s.k === 'count') {
+    const list = T.stand[s.cat], N = list.length, done = st >= N;
+    el.innerHTML = `<div class="eyebrow">${CATN[s.cat]}</div><div class="rv-big" style="font-size:clamp(2rem,5vw,3.8rem)">${done ? `${s.cat === 'choc' ? 'Chocolate' : 'Everything-else'} champion` : st === 0 ? (s.cat === 'choc' ? 'The Chocolates' : 'Everything Else') : 'Counting down…'}</div>
+      <ol class="board ${N > 7 ? 'two' : ''}" style="${N > 7 ? `grid-template-rows:repeat(${Math.ceil(N / 2)},auto)` : ''}">${list.map((x, idx) => {
+        const place = idx + 1, shown = place > N - st, isNew = !back && place === N - st + 1;
+        return `<li class="plate ${shown ? 'shown' : ''} ${shown && place === 1 ? 'winner' : ''} ${isNew ? 'pop' : ''}"><span class="pn">${place}</span>${shown ? `${art(x.c)}<span class="pnm">${esc(x.c.name)}</span><span class="pts">${x.pts} pts</span>` : '<span class="q">? ? ?</span>'}</li>`;
+      }).join('')}</ol>` + (st === 0 ? `<p class="rv-sub">Points: every taster's #1 earns the most, last place earns 1.</p>` : '');
+    if (done && !back) confetti();
+  } else if (s.k === 'divide') {
+    const d = T.divide, tot = d.choc + d.other, p = Math.round(d.choc / tot * 100);
+    el.innerHTML = `<div class="eyebrow">Chocolate versus everything else</div><div class="rv-big">The Great Divide</div>
+      <p class="rv-sub">Each taster's #1 chocolate went head to head with their #1 everything else.</p>
+      <div class="divide"><div class="dbar"><div class="a" id="dbar-a" style="flex:0 0 50%"></div><div class="b"></div></div>
+      <div class="dlabels"><span class="a">Chocolate ${st ? p + '%' : '?'}</span><span class="b">${st ? (100 - p) + '%' : '?'} Everything else</span></div></div>`;
+    if (st) requestAnimationFrame(() => requestAnimationFrame(() => { const a = $('#dbar-a'); if (a) a.style.flexBasis = p + '%'; }));
+  } else if (s.k === 'supreme') {
+    el.innerHTML = `<div class="eyebrow">The top prize</div><div class="rv-big">The Supreme Sweet</div>` +
+      (st === 0 ? `<div class="rv-q">?</div><p class="rv-sub">The single candy that won the most showdowns tonight.</p>`
+        : `<div class="rv-hero good">${art(T.supreme.c)}<div class="nm">${esc(T.supreme.c.name)}</div></div><p class="rv-sub">Won ${T.supreme.f} ${T.supreme.f === 1 ? 'showdown' : 'showdowns'}.</p>`);
+    if (st && !back) confetti();
+  } else if (s.k === 'finale') {
+    const ph = S.votes.slice().reverse();
+    el.innerHTML = `<div class="rv-big">Thanks for tasting!</div><p class="rv-sub">${T.n} tasters signed the ledger tonight.</p>
+      <div class="mosaic">${ph.slice(0, 40).map(v => polHTML(v)).join('')}</div>`;
+  }
+}
+$('#scr-reveal').addEventListener('click', e => { if (e.target.closest('.rv-ctrl')) return; rvNext(); });
+$('#rv-prev').onclick = rvPrev;
+$('#rv-exit').onclick = () => { RV = null; show('scr-main'); };
+document.addEventListener('keydown', e => {
+  if (S.cur !== 'scr-reveal' || !RV) return;
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); rvNext(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); rvPrev(); }
+});
+
+/* confetti */
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = $('#confetti'); cv.hidden = false;
+  const ctx = cv.getContext('2d'), W = cv.width = innerWidth, H = cv.height = innerHeight;
+  const cols = ['#f0ab4f', '#8ae0c3', '#de5a7e', '#fbead2', '#c69a5d', '#7f3c96'];
+  const P = Array.from({ length:170 }, () => ({ x:W / 2 + (Math.random() - .5) * W * .3, y:H * .45, vx:(Math.random() - .5) * 16, vy:-Math.random() * 16 - 4, r:Math.random() * 6.28, vr:(Math.random() - .5) * .3, w:6 + Math.random() * 8, h:4 + Math.random() * 6, c:cols[(Math.random() * cols.length) | 0] }));
+  const t0 = performance.now();
+  (function frame(t) {
+    ctx.clearRect(0, 0, W, H);
+    for (const p of P) { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore(); }
+    if (t - t0 < 3800) requestAnimationFrame(frame); else { ctx.clearRect(0, 0, W, H); cv.hidden = true; }
+  })(t0);
+}
+
+/* ---------- wake lock ---------- */
+let wl = null;
+async function keepAwake() { try { if ('wakeLock' in navigator && !wl) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } } catch {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+document.addEventListener('pointerdown', keepAwake, { once:true });
+
+/* ---------- boot ---------- */
+function refresh() { if (S.cur === 'scr-main') renderMain(); renderHost(); }
+async function boot() {
+  renderMain();
+  $('#hint').textContent = hints()[0];
+  setInterval(rotateHint, 8000);
+  keepAwake();
+  try {
+    idb = await openDB();
+    const [candies, settings, votes, blobs] = await Promise.all([readKV('candies'), readKV('settings'), readAll('votes'), readAll('blobs')]);
+    blobs.forEach(b => { if (b && b.blob) cacheBlob(b.id, b.blob); });
+    S.candies = Array.isArray(candies) ? candies : [];
+    S.settings = { pin:String(settings?.pin || '1031'), open:settings?.open !== false };
+    S.votes = votes.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    S.ok = true;
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch {}
+  } catch { S.offline = true; }
+  S.ready = true; refresh();
+  $('#hint').textContent = hints()[0];
+}
+boot();
+})();
+</script>
+</body>
+</html>
